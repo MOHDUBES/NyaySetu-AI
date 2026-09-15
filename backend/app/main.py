@@ -73,7 +73,18 @@ app.include_router(chat.router, prefix="/api/chat", tags=["Chat"])
 app.include_router(comparison.router, prefix="/api/comparison", tags=["Comparison"])
 
 
-# ── Health Check ──────────────────────────────────────────────────────────────
+# ── Health & Root ─────────────────────────────────────────────────────────────
+@app.get("/", tags=["Root"])
+async def root():
+    return {
+        "service": "NyaySetu AI API",
+        "status": "online",
+        "docs": "/docs",
+        "health": "/health",
+        "disclaimer": "Informational assistance only. Not legal advice.",
+    }
+
+
 @app.get("/health", tags=["Health"])
 async def health_check():
     return {
