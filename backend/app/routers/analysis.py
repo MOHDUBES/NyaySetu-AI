@@ -42,6 +42,7 @@ async def summarize(document_id: str, request: Request) -> SummaryResponse:
             "title": s.get("title", "Section"),
             "content": s.get("content", ""),
             "plain_language": s.get("plain_language", ""),
+            "plain_language_hi": s.get("plain_language_hi", ""),
         }
         for s in result.get("sections", [])
     ]
@@ -49,9 +50,11 @@ async def summarize(document_id: str, request: Request) -> SummaryResponse:
     return SummaryResponse(
         document_id=document_id,
         overall_summary=result.get("overall_summary", ""),
+        overall_summary_hi=result.get("overall_summary_hi", ""),
         document_type=result.get("document_type", "Legal Document"),
         sections=sections,
         jargon_terms=result.get("jargon_terms", {}),
+        jargon_terms_hi=result.get("jargon_terms_hi", {}),
     )
 
 
