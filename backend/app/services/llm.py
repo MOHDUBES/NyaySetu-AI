@@ -85,11 +85,30 @@ You MUST follow these rules without exception:
 
 
 def _extract_json(text: str) -> Any:
-    """Extract JSON from LLM response that may include markdown code fences."""
-    # Remove ```json ... ``` wrappers
-    text = re.sub(r"```(?:json)?\s*", "", text)
-    text = re.sub(r"```\s*$", "", text, flags=re.MULTILINE)
-    return json.loads(text.strip())
+    """Extract JSON from LLM response that may include markdown code fences or extra text."""
+    # Strip markdown code blocks if present
+    match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", text)
+    if match:
+        clean = match.group(1).strip()
+        try:
+            return json.loads(clean)
+        except Exception:
+            pass
+
+    # Try finding outer [ ... ] or { ... }
+    first_bracket = min([i for i in [text.find('{'), text.find('[')] if i != -1], default=-1)
+    last_bracket = max([text.rfind('}'), text.rfind(']')], default=-1)
+    if first_bracket != -1 and last_bracket != -1 and last_bracket > first_bracket:
+        candidate = text[first_bracket:last_bracket + 1].strip()
+        try:
+            return json.loads(candidate)
+        except Exception:
+            pass
+
+    # Direct fallback
+    cleaned = re.sub(r"```(?:json)?\s*", "", text)
+    cleaned = re.sub(r"```\s*$", "", cleaned, flags=re.MULTILINE)
+    return json.loads(cleaned.strip())
 
 
 # ── Document Summarization (Bilingual English + Hindi/Hinglish) ───────────────
