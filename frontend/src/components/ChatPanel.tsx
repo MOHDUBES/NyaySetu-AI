@@ -100,6 +100,9 @@ export default function ChatPanel({
 
       recognition.onend = () => {
         setIsListening(false)
+        setTimeout(() => {
+          inputRef.current?.focus()
+        }, 50)
       }
 
       recognitionRef.current = recognition
@@ -123,6 +126,7 @@ export default function ChatPanel({
     if (isListening) {
       recognitionRef.current?.stop()
       setIsListening(false)
+      inputRef.current?.focus()
     } else {
       try {
         if (recognitionRef.current) {
@@ -144,13 +148,16 @@ export default function ChatPanel({
       }
 
       window.speechSynthesis.cancel()
-      const utt = new SpeechSynthesisUtterance(text)
-      utt.lang = language === 'hi' ? 'hi-IN' : 'en-IN'
-      utt.rate = 0.88
-      utt.onend = () => setSpeakingId(null)
-      utt.onerror = () => setSpeakingId(null)
-      setSpeakingId(id)
-      window.speechSynthesis.speak(utt)
+      const utterance = new SpeechSynthesisUtterance(text)
+      utterance.lang = language === 'hi' ? 'hi-IN' : 'en-IN'
+      utterance.rate = 0.95
+      utterance.pitch = 1.0
+
+      utterance.onstart = () => setSpeakingId(id)
+      utterance.onend = () => setSpeakingId(null)
+      utterance.onerror = () => setSpeakingId(null)
+
+      window.speechSynthesis.speak(utterance)
     }
   }
 
@@ -163,6 +170,13 @@ export default function ChatPanel({
   }, [messages])
 
   const handleSend = async (customText?: string) => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop()
+      } catch (_) {}
+      setIsListening(false)
+    }
+
     const question = (customText || input).trim()
     if (!question || isLoading) return
 

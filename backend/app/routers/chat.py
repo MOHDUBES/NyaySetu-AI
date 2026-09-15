@@ -35,22 +35,31 @@ async def chat_with_document(
     if not question:
         raise HTTPException(status_code=400, detail="Message cannot be empty.")
 
-    # Check if chunks with embeddings are available
+    # Check if chunks with embeddings are available; if not, embed initial chunks on the fly
     embedded_chunks = [c for c in session.chunks if c.embedding is not None]
-    if not embedded_chunks:
-        raise HTTPException(
-            status_code=503,
-            detail="Document embeddings not available. Please re-upload the document.",
-        )
+    if not embedded_chunks and session.chunks:
+        from app.services.embeddings import generate_embeddings
+        session.chunks = generate_embeddings(session.chunks[:15]) + session.chunks[15:]
+        embedded_chunks = [c for c in session.chunks if c.embedding is not None]
 
     # Retrieve relevant chunks via semantic search
-    relevant_chunks = retrieve_relevant_chunks(question, embedded_chunks, k=5)
+    relevant_chunks = []
+    if embedded_chunks:
+        relevant_chunks = retrieve_relevant_chunks(question, embedded_chunks, k=5)
+
+    # Fallback to top document chunks if semantic retrieval had low similarity
+    if not relevant_chunks and session.chunks:
+        relevant_chunks = [c.text for c in session.chunks[:5]]
 
     if not relevant_chunks:
         return ChatResponse(
             answer=(
                 "I couldn't find relevant information in this document to answer your question. "
                 "You may want to consult a legal professional for this specific question."
+            ),
+            answer_hi=(
+                "इस दस्तावेज़ में इस प्रश्न से संबंधित जानकारी नहीं मिल सकी। "
+                "कृपया इस विशिष्ट प्रश्न के लिए किसी कानूनी विशेषज्ञ से परामर्श लें।"
             ),
             sources=[],
             is_out_of_scope=True,
