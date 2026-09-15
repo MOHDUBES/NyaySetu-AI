@@ -13,7 +13,7 @@ load_dotenv()
 
 # ── Client Setup (Google GenAI SDK) ───────────────────────────────────────────
 _API_KEY = os.getenv("GEMINI_API_KEY", "")
-_MODEL_NAME = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+_MODEL_NAME = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
 
 try:
     from google import genai
