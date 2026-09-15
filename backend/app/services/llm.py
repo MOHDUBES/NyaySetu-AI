@@ -13,7 +13,18 @@ load_dotenv()
 
 # ── Client Setup (Google GenAI SDK) ───────────────────────────────────────────
 _API_KEY = os.getenv("GEMINI_API_KEY", "")
-_MODEL_NAME = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
+_DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
+
+# Candidate models in order of priority if a 503 high-demand spike occurs
+_FALLBACK_MODELS = [
+    _DEFAULT_MODEL,
+    "gemini-3.5-flash",
+    "gemini-3.6-flash",
+    "gemini-3.7-flash",
+    "gemini-2.5-flash-lite",
+]
+# Remove duplicates while preserving order
+_CANDIDATE_MODELS = list(dict.fromkeys(_FALLBACK_MODELS))
 
 try:
     from google import genai
@@ -33,13 +44,26 @@ def _get_client():
 
 
 def _generate(prompt: str) -> str:
-    """Execute Gemini text generation via google-genai Client."""
+    """Execute Gemini text generation via google-genai Client with automatic model fallback."""
     client = _get_client()
-    response = client.models.generate_content(
-        model=_MODEL_NAME,
-        contents=prompt,
-    )
-    return response.text or ""
+    last_error = None
+
+    for model in _CANDIDATE_MODELS:
+        try:
+            response = client.models.generate_content(
+                model=model,
+                contents=prompt,
+            )
+            if response.text:
+                return response.text
+        except Exception as e:
+            last_error = e
+            # Try next model on capacity/demand error
+            continue
+
+    if last_error:
+        raise last_error
+    return ""
 
 
 # ── Shared Disclaimer Preamble ────────────────────────────────────────────────
