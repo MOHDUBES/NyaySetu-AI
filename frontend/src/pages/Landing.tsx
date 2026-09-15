@@ -62,7 +62,7 @@ const stats = [
   { value: '6+', label: 'AI-Powered Features' },
   { value: 'WCAG AA', label: 'Accessibility Standard' },
   { value: '100%', label: 'Privacy-First' },
-  { value: '∞', label: 'Not Legal Advice 😄' },
+  { value: 'Ethical AI', label: 'Responsible Legal Tech' },
 ]
 
 const containerVariants = {
