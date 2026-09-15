@@ -36,12 +36,12 @@ async def signup(body: SignupRequest, request: Request) -> AuthResponse:
     from supabase import create_client
 
     url = os.getenv("SUPABASE_URL", "")
-    key = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+    key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_ANON_KEY", "")
 
     if not url or not key:
         raise HTTPException(
             status_code=503,
-            detail="Auth service not configured. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.",
+            detail="Auth service not configured. Please set SUPABASE_URL and SUPABASE_ANON_KEY.",
         )
 
     try:

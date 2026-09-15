@@ -7,20 +7,19 @@ import os
 from dataclasses import dataclass, field
 from typing import Optional
 
-import google.generativeai as genai
+from google import genai
 import numpy as np
 from dotenv import load_dotenv
 
 load_dotenv()
 
 _API_KEY = os.getenv("GEMINI_API_KEY", "")
-if _API_KEY:
-    genai.configure(api_key=_API_KEY)
+_client = genai.Client(api_key=_API_KEY) if _API_KEY else None
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 CHUNK_SIZE = 800          # characters per chunk
 CHUNK_OVERLAP = 150       # overlap between chunks
-EMBEDDING_MODEL = "models/text-embedding-004"   # Gemini embedding model
+EMBEDDING_MODEL = "gemini-embedding-001"   # Google GenAI embedding model
 
 
 # ── Data Classes ──────────────────────────────────────────────────────────────
@@ -79,24 +78,23 @@ def generate_embeddings(chunks: list[TextChunk]) -> list[TextChunk]:
     Generate Gemini embeddings for a list of text chunks.
     Batches requests to stay within API limits.
     """
-    if not _API_KEY:
+    if not _client:
         # Fallback: use simple TF-based pseudo-embeddings for testing
         for chunk in chunks:
             chunk.embedding = _pseudo_embedding(chunk.text)
         return chunks
 
-    batch_size = 20  # Gemini allows up to 100 per batch; 20 is safe
+    batch_size = 20  # Safe batch size
 
     for i in range(0, len(chunks), batch_size):
         batch = chunks[i:i + batch_size]
         try:
-            result = genai.embed_content(
+            result = _client.models.embed_content(
                 model=EMBEDDING_MODEL,
-                content=[c.text for c in batch],
-                task_type="RETRIEVAL_DOCUMENT",
+                contents=[c.text for c in batch],
             )
-            for chunk, embedding in zip(batch, result["embedding"]):
-                chunk.embedding = embedding
+            for chunk, emb in zip(batch, result.embeddings):
+                chunk.embedding = emb.values
         except Exception:
             # Fallback to pseudo-embeddings if API call fails
             for chunk in batch:
@@ -107,15 +105,16 @@ def generate_embeddings(chunks: list[TextChunk]) -> list[TextChunk]:
 
 def embed_query(query: str) -> list[float]:
     """Generate an embedding for a search query."""
-    if not _API_KEY:
+    if not _client:
         return _pseudo_embedding(query)
     try:
-        result = genai.embed_content(
+        result = _client.models.embed_content(
             model=EMBEDDING_MODEL,
-            content=query,
-            task_type="RETRIEVAL_QUERY",
+            contents=query,
         )
-        return result["embedding"]
+        if result.embeddings:
+            return result.embeddings[0].values
+        return _pseudo_embedding(query)
     except Exception:
         return _pseudo_embedding(query)
 
