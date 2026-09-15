@@ -288,10 +288,10 @@ Be thorough. The goal is to help the user make the most of their consultation ti
 # ── Document Comparison ───────────────────────────────────────────────────────
 def compare_documents_ai(diff_sections: list[dict], doc1_name: str, doc2_name: str) -> dict:
     """
-    Generate AI semantic summary of document comparison results.
+    Generate AI semantic summary of document comparison results in both English and conversational Hindi/Hinglish.
     """
     prompt = f"""{_DISCLAIMER_PREAMBLE}
-You are comparing two versions of a legal document to help a user understand what changed.
+You are comparing two versions of a legal document to help an everyday user (especially low-literacy or non-English speakers) understand what changed.
 
 Document 1: {doc1_name}
 Document 2: {doc2_name}
@@ -301,9 +301,12 @@ Changed sections (sample):
 
 Return a JSON object:
 {{
-  "ai_summary": "2-4 sentence plain-language summary of the key differences between the documents",
-  "favorable_to_user": "doc1|doc2|neither|depends (which document appears more favorable to a typical user signing it)",
-  "key_differences": ["list of 3-7 most important changes and what they mean for the user — informational framing only, not legal conclusions"]
+  "ai_summary": "2-4 sentence plain-language English summary of the key differences between the documents",
+  "ai_summary_hi": "2-4 sentence conversational Hindi / Hinglish summary (सरल हिंदी/हिंग्लिश में ताकि कोई भी सुनकर आसानी से समझ सके कि दोनों दस्तावेजों में क्या बदला है)",
+  "favorable_to_user": "doc1|doc2|neither|depends",
+  "favorable_to_user_hi": "दस्तावेज़ 1 अधिक अनुकूल है | दस्तावेज़ 2 अधिक अनुकूल है | दोनों में कोई बड़ा अंतर नहीं | आपकी स्थिति पर निर्भर करता है",
+  "key_differences": ["list of 3-7 most important changes in English"],
+  "key_differences_hi": ["सरल हिंदी/हिंग्लिश में वही 3-7 मुख्य बदलावों की सूची"]
 }}
 """
 

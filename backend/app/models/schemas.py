@@ -174,10 +174,14 @@ class ComparisonResponse(BaseModel):
     doc2_name: str
     diff_sections: list[DiffSection]
     ai_summary: str
+    ai_summary_hi: Optional[str] = None
     favorable_to_user: Optional[str] = None  # "doc1" | "doc2" | "neither" | "depends"
+    favorable_to_user_hi: Optional[str] = None
     key_differences: list[str]
+    key_differences_hi: Optional[list[str]] = None
     disclaimer: str = (
-        "This comparison is informational only. Not legal advice."
+        "This comparison is informational only. Not legal advice. / "
+        "यह तुलना केवल सूचना के उद्देश्य से है, कानूनी सलाह नहीं।"
     )
 
 

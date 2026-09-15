@@ -98,8 +98,11 @@ export interface ComparisonResponse {
   doc2_name: string
   diff_sections: DiffSection[]
   ai_summary: string
+  ai_summary_hi?: string
   favorable_to_user: string
+  favorable_to_user_hi?: string
   key_differences: string[]
+  key_differences_hi?: string[]
   disclaimer: string
 }
 

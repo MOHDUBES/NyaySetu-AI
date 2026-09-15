@@ -97,6 +97,9 @@ def compare_documents(
         "doc2_name": doc2_name,
         "diff_sections": [s.model_dump() for s in diff_sections],
         "ai_summary": ai_result.get("ai_summary", ""),
+        "ai_summary_hi": ai_result.get("ai_summary_hi"),
         "favorable_to_user": ai_result.get("favorable_to_user", "depends"),
+        "favorable_to_user_hi": ai_result.get("favorable_to_user_hi"),
         "key_differences": ai_result.get("key_differences", []),
+        "key_differences_hi": ai_result.get("key_differences_hi", []),
     }

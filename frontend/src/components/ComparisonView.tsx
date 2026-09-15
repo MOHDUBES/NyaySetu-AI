@@ -6,7 +6,10 @@ import {
   MinusCircle,
   PlusCircle,
   RefreshCw,
+  Square,
+  Volume2,
 } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import type { ComparisonResponse, DiffSection } from '../lib/api'
 
 interface ComparisonViewProps {
@@ -114,39 +117,130 @@ const favorableLabels: Record<string, { label: string; color: string }> = {
 }
 
 /**
- * ComparisonView — Side-by-side document diff with AI summary.
+ * ComparisonView — Side-by-side document diff with bilingual AI summary and Voice TTS.
  * Shows only changed sections (added/removed/modified).
- * WCAG: change types announced via icon + text label.
+ * Voice Read-Aloud for low-literacy accessibility.
  */
 export default function ComparisonView({ result }: ComparisonViewProps) {
+  const [lang, setLang] = useState<'hi' | 'en'>('hi')
+  const [isSpeaking, setIsSpeaking] = useState(false)
+
   const changedSections = result.diff_sections.filter((s) => s.change_type !== 'unchanged')
   const favorableInfo = favorableLabels[result.favorable_to_user] || favorableLabels.depends
+
+  const summaryText = lang === 'hi' && result.ai_summary_hi ? result.ai_summary_hi : result.ai_summary
+  const diffs = lang === 'hi' && result.key_differences_hi && result.key_differences_hi.length > 0
+    ? result.key_differences_hi
+    : result.key_differences
+  const verdictText = lang === 'hi' && result.favorable_to_user_hi
+    ? result.favorable_to_user_hi
+    : favorableInfo.label
+
+  const toggleSpeech = () => {
+    if (!('speechSynthesis' in window)) return
+
+    if (isSpeaking) {
+      window.speechSynthesis.cancel()
+      setIsSpeaking(false)
+      return
+    }
+
+    window.speechSynthesis.cancel()
+    const textToSpeak = `${lang === 'hi' ? 'दस्तावेज़ तुलना का सारांश: ' : 'Document comparison summary: '} ${summaryText}. ${diffs.join('. ')}`
+    const utterance = new SpeechSynthesisUtterance(textToSpeak)
+    utterance.lang = lang === 'hi' ? 'hi-IN' : 'en-IN'
+    utterance.rate = 0.95
+    utterance.pitch = 1.0
+
+    utterance.onstart = () => setIsSpeaking(true)
+    utterance.onend = () => setIsSpeaking(false)
+    utterance.onerror = () => setIsSpeaking(false)
+
+    window.speechSynthesis.speak(utterance)
+  }
+
+  useEffect(() => {
+    return () => {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel()
+      }
+    }
+  }, [])
 
   return (
     <section aria-label="Document Comparison Results" className="space-y-6">
       {/* AI Summary Card */}
       <div className="card space-y-4">
-        <div className="flex items-center gap-2">
-          <ArrowLeftRight size={18} className="text-gold-400" aria-hidden="true" />
-          <h2 className="font-semibold text-white">AI Comparison Summary</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-surface-border pb-3">
+          <div className="flex items-center gap-2">
+            <ArrowLeftRight size={18} className="text-gold-400" aria-hidden="true" />
+            <h2 className="font-semibold text-white">
+              {lang === 'hi' ? 'दस्तावेज़ तुलना सारांश (AI Summary)' : 'AI Comparison Summary'}
+            </h2>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* Voice Audio Readout Button */}
+            {'speechSynthesis' in window && (
+              <button
+                onClick={toggleSpeech}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  isSpeaking
+                    ? 'bg-red-500 text-white shadow-lg shadow-red-500/20 animate-pulse'
+                    : 'bg-gold-500/15 text-gold-400 hover:bg-gold-500 hover:text-surface-bg border border-gold-500/30'
+                }`}
+                aria-label={isSpeaking ? 'Stop voice readout' : 'Listen to comparison aloud'}
+                title={isSpeaking ? 'Stop voice readout' : 'Listen with Voice TTS'}
+              >
+                {isSpeaking ? <Square size={13} /> : <Volume2 size={13} />}
+                <span>
+                  {isSpeaking
+                    ? (lang === 'hi' ? 'रोकें' : 'Stop')
+                    : (lang === 'hi' ? 'बोलकर सुनें (Voice TTS)' : 'Listen Aloud')}
+                </span>
+              </button>
+            )}
+
+            {/* Language Switcher */}
+            <div className="flex items-center bg-surface-card border border-surface-border rounded-lg p-0.5">
+              <button
+                onClick={() => setLang('hi')}
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
+                  lang === 'hi' ? 'bg-gold-500 text-surface-bg font-semibold' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                हिन्दी
+              </button>
+              <button
+                onClick={() => setLang('en')}
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
+                  lang === 'en' ? 'bg-gold-500 text-surface-bg font-semibold' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                English
+              </button>
+            </div>
+          </div>
         </div>
 
-        <p className="text-sm text-slate-200 leading-relaxed">{result.ai_summary}</p>
+        <p className="text-sm text-slate-200 leading-relaxed">{summaryText}</p>
 
         {/* Favorable verdict */}
         <div className="flex items-center gap-2 p-3 rounded-xl bg-surface border border-surface-border">
           <CheckCircle2 size={16} className={favorableInfo.color} aria-hidden="true" />
-          <p className={`text-sm font-medium ${favorableInfo.color}`} aria-label={`Verdict: ${favorableInfo.label}`}>
-            {favorableInfo.label}
+          <p className={`text-sm font-medium ${favorableInfo.color}`} aria-label={`Verdict: ${verdictText}`}>
+            {verdictText}
           </p>
         </div>
 
         {/* Key differences */}
-        {result.key_differences.length > 0 && (
+        {diffs.length > 0 && (
           <div>
-            <h3 className="text-sm font-semibold text-white mb-2">Key Differences</h3>
+            <h3 className="text-sm font-semibold text-white mb-2">
+              {lang === 'hi' ? 'मुख्य बदलाव (Key Differences)' : 'Key Differences'}
+            </h3>
             <ul className="space-y-2" aria-label="Key differences between documents">
-              {result.key_differences.map((diff, i) => (
+              {diffs.map((diff, i) => (
                 <li key={i} className="flex items-start gap-2 text-sm text-slate-300">
                   <span className="text-gold-400 font-bold shrink-0 mt-0.5">{i + 1}.</span>
                   {diff}
