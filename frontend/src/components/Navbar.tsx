@@ -1,7 +1,8 @@
 import { motion } from 'framer-motion'
-import { BookOpen, GitCompare, Menu, Scale, X } from 'lucide-react'
-import { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { BookOpen, GitCompare, LogOut, Menu, Scale, User as UserIcon, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { supabase, type User } from '../lib/supabase'
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -11,7 +12,29 @@ const navLinks = [
 
 export default function Navbar() {
   const location = useLocation()
+  const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [user, setUser] = useState<User | null>(null)
+
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null)
+    })
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    setUser(null)
+    navigate('/')
+  }
 
   return (
     <nav
@@ -54,14 +77,35 @@ export default function Navbar() {
             ))}
           </div>
 
-          {/* Desktop CTA */}
+          {/* Desktop CTA / User Profile */}
           <div className="hidden md:flex items-center gap-3">
-            <Link to="/auth" className="btn-ghost text-sm" aria-label="Login to your account">
-              Login
-            </Link>
-            <Link to="/auth?mode=signup" className="btn-primary text-sm py-2 px-4" aria-label="Sign up for NyaySetu AI">
-              Get Started
-            </Link>
+            {user ? (
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-card border border-surface-border text-xs text-slate-300">
+                  <UserIcon size={14} className="text-gold-400" />
+                  <span className="max-w-[150px] truncate" title={user.email}>
+                    {user.email}
+                  </span>
+                </div>
+                <button
+                  onClick={handleSignOut}
+                  className="btn-ghost text-xs flex items-center gap-1.5 text-slate-400 hover:text-rose-400"
+                  aria-label="Sign out"
+                >
+                  <LogOut size={14} />
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <>
+                <Link to="/auth" className="btn-ghost text-sm" aria-label="Login to your account">
+                  Login
+                </Link>
+                <Link to="/auth?mode=signup" className="btn-primary text-sm py-2 px-4" aria-label="Sign up for NyaySetu AI">
+                  Get Started
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -104,12 +148,26 @@ export default function Navbar() {
               </Link>
             ))}
             <div className="flex gap-2 mt-3">
-              <Link to="/auth" onClick={() => setMobileOpen(false)} className="btn-secondary flex-1 justify-center">
-                Login
-              </Link>
-              <Link to="/auth?mode=signup" onClick={() => setMobileOpen(false)} className="btn-primary flex-1 justify-center">
-                Sign Up
-              </Link>
+              {user ? (
+                <div className="w-full flex items-center justify-between p-2 rounded-xl bg-surface-card border border-surface-border">
+                  <span className="text-xs text-slate-300 truncate max-w-[200px]">{user.email}</span>
+                  <button
+                    onClick={() => { setMobileOpen(false); handleSignOut(); }}
+                    className="text-xs text-rose-400 hover:underline"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <Link to="/auth" onClick={() => setMobileOpen(false)} className="btn-secondary flex-1 justify-center">
+                    Login
+                  </Link>
+                  <Link to="/auth?mode=signup" onClick={() => setMobileOpen(false)} className="btn-primary flex-1 justify-center">
+                    Sign Up
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </motion.div>
