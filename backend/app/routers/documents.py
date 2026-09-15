@@ -60,9 +60,12 @@ async def upload_document(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to parse document: {str(e)}")
 
-    # Generate chunks and embeddings for RAG
+    # Generate chunks and embed top initial chunks quickly for immediate readiness
     chunks = chunk_text(parsed.text)
-    chunks = generate_embeddings(chunks)
+    if chunks:
+        # Embed first 10 key chunks fast (<1s)
+        initial_chunks = generate_embeddings(chunks[:10])
+        chunks = initial_chunks + chunks[10:]
 
     document_id = str(uuid.uuid4())
     session = DocumentSession(

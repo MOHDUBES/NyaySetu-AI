@@ -13,15 +13,15 @@ load_dotenv()
 
 # ── Client Setup (Google GenAI SDK) ───────────────────────────────────────────
 _API_KEY = os.getenv("GEMINI_API_KEY", "")
-_DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
+_DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
 
-# Candidate models in order of priority if a 503 high-demand spike occurs
+# Candidate models in order of priority (fastest and high-quota first)
 _FALLBACK_MODELS = [
     _DEFAULT_MODEL,
+    "gemini-3.5-flash-lite",
+    "gemini-3.8-flash",
     "gemini-3.5-flash",
     "gemini-3.6-flash",
-    "gemini-3.7-flash",
-    "gemini-2.5-flash-lite",
 ]
 # Remove duplicates while preserving order
 _CANDIDATE_MODELS = list(dict.fromkeys(_FALLBACK_MODELS))
