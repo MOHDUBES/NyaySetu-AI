@@ -88,7 +88,7 @@ export default function Auth() {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     className="input"
-                    placeholder="e.g. Mohd Ubes"
+                    placeholder="e.g. John Doe"
                     required
                     autoComplete="name"
                   />
