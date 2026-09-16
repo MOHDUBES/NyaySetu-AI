@@ -9,6 +9,7 @@ export default function Auth() {
   const isSignup = params.get('mode') === 'signup'
   const [mode, setMode] = useState<'login' | 'signup'>(isSignup ? 'signup' : 'login')
 
+  const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -26,7 +27,15 @@ export default function Auth() {
 
     try {
       if (mode === 'signup') {
-        const { error } = await supabase.auth.signUp({ email, password })
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              full_name: fullName.trim() || undefined,
+            },
+          },
+        })
         if (error) throw error
         setSuccess('Account created! Check your email to confirm, then log in.')
       } else {
@@ -67,6 +76,25 @@ export default function Auth() {
         <div className="card">
           <form onSubmit={handleSubmit} noValidate aria-label={mode === 'login' ? 'Login form' : 'Sign up form'}>
             <div className="space-y-4">
+              {/* Full Name (Sign Up Only) */}
+              {mode === 'signup' && (
+                <div>
+                  <label htmlFor="fullName" className="block text-sm font-medium text-slate-300 mb-1.5">
+                    Your Name
+                  </label>
+                  <input
+                    id="fullName"
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="input"
+                    placeholder="e.g. Mohd Ubes"
+                    required
+                    autoComplete="name"
+                  />
+                </div>
+              )}
+
               {/* Email */}
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-1.5">

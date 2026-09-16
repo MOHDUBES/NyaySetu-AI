@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { BookOpen, GitCompare, LogOut, Menu, Scale, User as UserIcon, X } from 'lucide-react'
+import { Check, Edit2, GitCompare, LogOut, Menu, Scale, User as UserIcon, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { supabase, type User } from '../lib/supabase'
@@ -15,6 +15,9 @@ export default function Navbar() {
   const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [user, setUser] = useState<User | null>(null)
+  const [customName, setCustomName] = useState<string>('')
+  const [isEditingName, setIsEditingName] = useState(false)
+  const [nameInput, setNameInput] = useState('')
 
   useEffect(() => {
     // Get initial session
@@ -30,9 +33,89 @@ export default function Navbar() {
     return () => subscription.unsubscribe()
   }, [])
 
+  useEffect(() => {
+    if (user?.id) {
+      try {
+        const saved = localStorage.getItem(`nyaysetu_user_name_${user.id}`)
+        if (saved) {
+          setCustomName(saved)
+        } else {
+          setCustomName('')
+        }
+      } catch {}
+    }
+  }, [user])
+
+  const getDisplayName = () => {
+    if (!user) return ''
+    if (customName.trim()) return customName.trim()
+
+    const metaName =
+      user.user_metadata?.full_name ||
+      user.user_metadata?.name ||
+      user.user_metadata?.user_name ||
+      user.user_metadata?.display_name ||
+      user.user_metadata?.first_name
+
+    if (metaName && typeof metaName === 'string' && metaName.trim()) {
+      return metaName.trim()
+    }
+
+    if (user.email) {
+      const username = user.email.split('@')[0]
+      let cleaned = username.replace(/[._+-]+/g, ' ').trim()
+
+      const noTrailingNums = cleaned.replace(/\d+$/, '').trim()
+      if (noTrailingNums.length >= 2) {
+        cleaned = noTrailingNums
+      }
+
+      cleaned = cleaned.replace(/([a-z])([A-Z])/g, '$1 $2')
+
+      const formatted = cleaned
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+        .join(' ')
+
+      if (formatted) return formatted
+      return username
+    }
+
+    return 'User'
+  }
+
+  const handleStartEdit = () => {
+    setNameInput(getDisplayName())
+    setIsEditingName(true)
+  }
+
+  const handleSaveName = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
+    if (!user) return
+    const trimmed = nameInput.trim()
+    if (!trimmed) {
+      setIsEditingName(false)
+      return
+    }
+
+    setCustomName(trimmed)
+    setIsEditingName(false)
+    try {
+      localStorage.setItem(`nyaysetu_user_name_${user.id}`, trimmed)
+      await supabase.auth.updateUser({
+        data: { full_name: trimmed },
+      })
+    } catch (err) {
+      console.warn('Failed to update name in Supabase:', err)
+    }
+  }
+
   const handleSignOut = async () => {
     await supabase.auth.signOut()
     setUser(null)
+    setCustomName('')
+    setIsEditingName(false)
     navigate('/')
   }
 
@@ -81,12 +164,54 @@ export default function Navbar() {
           <div className="hidden md:flex items-center gap-3">
             {user ? (
               <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-card border border-surface-border text-xs text-slate-300">
-                  <UserIcon size={14} className="text-gold-400" />
-                  <span className="max-w-[150px] truncate" title={user.email}>
-                    {user.email}
-                  </span>
-                </div>
+                {isEditingName ? (
+                  <form onSubmit={handleSaveName} className="flex items-center gap-1.5">
+                    <input
+                      type="text"
+                      value={nameInput}
+                      onChange={(e) => setNameInput(e.target.value)}
+                      className="px-2.5 py-1 text-xs rounded-lg bg-surface-card border border-gold-500/50 text-white focus:outline-none focus:ring-1 focus:ring-gold-400 w-32"
+                      placeholder="Your Name"
+                      autoFocus
+                    />
+                    <button
+                      type="submit"
+                      className="p-1.5 rounded-md bg-gold-500 text-surface-bg hover:bg-gold-400 transition-colors"
+                      title="Save Name"
+                      aria-label="Save Name"
+                    >
+                      <Check size={13} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingName(false)}
+                      className="p-1.5 rounded-md text-slate-400 hover:text-white transition-colors"
+                      title="Cancel"
+                      aria-label="Cancel editing"
+                    >
+                      <X size={13} />
+                    </button>
+                  </form>
+                ) : (
+                  <div
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-card border border-surface-border text-xs text-slate-200 transition-all"
+                    title={user.email ? `Email: ${user.email} (Click pencil to edit name)` : undefined}
+                  >
+                    <UserIcon size={14} className="text-gold-400 shrink-0" />
+                    <span className="max-w-[140px] truncate font-medium">
+                      {getDisplayName()}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleStartEdit}
+                      className="text-slate-500 hover:text-gold-400 transition-colors p-0.5 ml-0.5"
+                      title="Edit your display name"
+                      aria-label="Edit display name"
+                    >
+                      <Edit2 size={11} />
+                    </button>
+                  </div>
+                )}
                 <button
                   onClick={handleSignOut}
                   className="btn-ghost text-xs flex items-center gap-1.5 text-slate-400 hover:text-rose-400"
@@ -149,11 +274,16 @@ export default function Navbar() {
             ))}
             <div className="flex gap-2 mt-3">
               {user ? (
-                <div className="w-full flex items-center justify-between p-2 rounded-xl bg-surface-card border border-surface-border">
-                  <span className="text-xs text-slate-300 truncate max-w-[200px]">{user.email}</span>
+                <div className="w-full flex items-center justify-between p-2.5 rounded-xl bg-surface-card border border-surface-border">
+                  <div className="flex items-center gap-2 truncate">
+                    <UserIcon size={14} className="text-gold-400 shrink-0" />
+                    <span className="text-xs text-slate-200 font-medium truncate max-w-[180px]" title={user.email}>
+                      {getDisplayName()}
+                    </span>
+                  </div>
                   <button
                     onClick={() => { setMobileOpen(false); handleSignOut(); }}
-                    className="text-xs text-rose-400 hover:underline"
+                    className="text-xs text-rose-400 hover:underline shrink-0"
                   >
                     Sign Out
                   </button>
