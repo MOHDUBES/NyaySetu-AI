@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -23,9 +24,9 @@ limiter = Limiter(key_func=get_remote_address)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup / shutdown events."""
-    print("🚀 NyaySetu AI backend starting up...")
+    print("NyaySetu AI backend starting up...")
     yield
-    print("🛑 NyaySetu AI backend shutting down...")
+    print("NyaySetu AI backend shutting down...")
 
 
 # ── App ───────────────────────────────────────────────────────────────────────
@@ -33,7 +34,7 @@ app = FastAPI(
     title="NyaySetu AI API",
     description=(
         "GenAI-powered legal document assistance platform. "
-        "⚠️ This service does NOT provide legal advice. "
+        "This service does NOT provide legal advice. "
         "Always consult a licensed legal professional."
     ),
     version="1.0.0",
@@ -43,6 +44,9 @@ app = FastAPI(
 # ── Middleware ────────────────────────────────────────────────────────────────
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# High-efficiency GZip compression (reduces payload size by up to 80%)
+app.add_middleware(GZipMiddleware, minimum_size=500)
 
 cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
 app.add_middleware(
@@ -55,13 +59,19 @@ app.add_middleware(
 
 
 @app.middleware("http")
-async def add_legal_disclaimer_header(request: Request, call_next):
-    """Inject a persistent legal disclaimer into every response."""
+async def add_security_and_disclaimer_headers(request: Request, call_next):
+    """Inject persistent security headers and legal disclaimer into every response."""
     response = await call_next(request)
     response.headers["X-Legal-Disclaimer"] = (
         "This service provides informational assistance only and does NOT "
         "constitute legal advice. Consult a licensed legal professional."
     )
+    # Industry-standard HTTP security headers
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "geolocation=(), camera=(), microphone=()"
     return response
 
 

@@ -65,7 +65,7 @@ export function findVoiceForLanguage(lang: 'hi' | 'en' | 'hi-IN' | 'en-IN'): Spe
     const enInVoice = voices.find((v) => {
       const l = v.lang.toLowerCase().replace('_', '-')
       const n = v.name.toLowerCase()
-      return l === 'en-in' || n.includes('india') || n.includes('neerja') || n.includes('prabhat')
+      return l === 'en-in' || (l.startsWith('en') && (n.includes('india') || n.includes('neerja') || n.includes('prabhat')))
     })
     if (enInVoice) return enInVoice
 

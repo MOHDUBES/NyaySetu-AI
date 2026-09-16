@@ -2,6 +2,7 @@
 NyaySetu AI — Gemini LLM Service
 All calls to the Google Gemini API, with safety guardrails.
 """
+import hashlib
 import json
 import os
 import re
@@ -42,8 +43,6 @@ def _get_client():
         return genai.Client(api_key=_API_KEY)
     return genai.Client()
 
-
-import hashlib
 
 _LLM_CACHE: dict[str, str] = {}
 _MAX_CACHE_ENTRIES = 256

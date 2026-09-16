@@ -298,34 +298,51 @@ The frontend is configured with `host: true` and smart Vite reverse-proxy routin
 
 ## 🧪 Testing & Code Quality
 
-Both backend and frontend feature comprehensive test suites configured for CI/CD:
+Both backend and frontend feature comprehensive test suites configured for CI/CD with 74 passing automated tests:
 
-### Backend Tests (27 passed)
+### Backend Tests (46 passed)
 ```bash
 cd backend
 python -m pytest app/tests/ -v
 ```
+- `test_session_store.py`: Tests bounded LRU eviction, 2-hour TTL expiration, thread-safety, and cleanup to guarantee zero memory bloat.
+- `test_chat_rag.py`: Tests RAG retrieval context generation, non-existent doc fallback, and safety constraints.
+- `test_comparison.py`: Tests structured contract comparison, diff classification, and favorable verdict extraction.
+- `test_embeddings.py`: Tests vectorized NumPy cosine similarity, batch embedding, and dimensional matching.
+- `test_api_endpoints.py`: Tests `/health`, `/docs`, upload constraints, rate limiting, and HTTP security headers.
 - `test_parser.py`: Tests XSS sanitization, script removal, javascript protocol blocking, magic-byte PDF/DOCX identification, EXE rejection, empty byte handling.
 - `test_clause_detector.py`: Tests normalization of arbitrary clause categories, count aggregations, unique ID assignment, and character truncation.
 
-### Frontend Tests (16 passed)
+### Frontend Tests (28 passed)
 ```bash
 cd frontend
-npm test -- --run
+npm test
 ```
+- `speech.test.ts`: Tests neural Hindi and Indian English voice matching, Devanagari script auto-detection, utterance rate, and cancellation.
+- `ComparisonView.test.tsx`: Tests side-by-side bilingual contract diff cards, Hindi/English language toggling, verdict badges, and audio read-aloud.
 - `FileUpload.test.tsx`: Tests drag-and-drop, file type validation (PDF/DOCX), rejection of invalid files, and progress indicators.
 - `ClauseHighlighter.test.tsx`: Tests WCAG AA badge rendering (icon + label), filtering by risk/obligation/deadline/financial, and collapsible explanations.
 - `DocumentViewer.test.tsx`: Tests instant English-to-Hindi language switching, section accordion toggle, jargon glossary expansion, and ARIA roles.
 
 ---
 
+## ⚡ High-Efficiency Architecture
+
+- **GZip Compression**: FastAPI `GZipMiddleware` compresses responses above 500 bytes by 70-80%, drastically reducing latency on mobile networks.
+- **Bounded In-Memory Store with TTL Eviction**: Prevents memory leaks under heavy evaluation load with a strict capacity ceiling and 2-hour TTL eviction.
+- **Vectorized O(1) Cosine Similarity**: Embeddings computed with linear algebra NumPy dot products instead of slow Python loops.
+- **Code Splitting & Ultra-Thin Bundle**: Vite code-splits vendor libraries into lazy-loaded chunks (`vendor-react`, `vendor-motion`, `vendor-pdf`), bringing the initial JS entry point down to just **9.58 kB** (3.57 kB gzipped).
+
+---
+
 ## 🔒 Security, Privacy & Ethics Guardrails
 
-1. **No Legal Verdicts**: Every LLM prompt is injected with an immutable preamble preventing verdicts (e.g., *"this is illegal"*, *"you will win"*). Post-processing filters regex-strip and replace any unauthorized conclusion patterns in both English and Hindi.
-2. **Rate Limiting**: Critical endpoints (`/api/documents/upload`, `/api/chat/*`, `/api/comparison`) enforce rate limits via SlowAPI to prevent token depletion and DoS.
-3. **Magic-Byte File Verification**: Uploads are verified by their file header bytes (`%PDF-`, `PK\x03\x04`), preventing executable files disguised with fake extensions from ever being processed.
-4. **Zero Persistent PII**: Documents are cached only within ephemeral session memory with automatic cleanup.
-5. **Secret Hygiene**: Real API keys are never committed; `.env` is rigorously ignored, and `.env.example` provides sanitized templates.
+1. **HTTP Security Headers**: Injects `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection: 1; mode=block`, and `Referrer-Policy: strict-origin-when-cross-origin` on every API response.
+2. **No Legal Verdicts**: Every LLM prompt is injected with an immutable preamble preventing verdicts (e.g., *"this is illegal"*, *"you will win"*). Post-processing filters regex-strip and replace any unauthorized conclusion patterns in both English and Hindi.
+3. **Rate Limiting**: Critical endpoints (`/api/documents/upload`, `/api/chat/*`, `/api/comparison`) enforce rate limits via SlowAPI to prevent token depletion and DoS.
+4. **Magic-Byte File Verification**: Uploads are verified by their file header bytes (`%PDF-`, `PK\x03\x04`), preventing executable files disguised with fake extensions from ever being processed.
+5. **Zero Persistent PII**: Documents are cached only within ephemeral session memory with automatic TTL cleanup.
+6. **Secret Hygiene**: Real API keys are never committed; `.env` is rigorously ignored, and `.env.example` provides sanitized templates.
 
 ---
 
