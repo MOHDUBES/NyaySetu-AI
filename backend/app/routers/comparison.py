@@ -17,7 +17,7 @@ MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB per file for comparison
 
 
 @router.post("", response_model=ComparisonResponse)
-@limiter.limit("5/hour")
+@limiter.limit("60/hour")
 async def compare_two_documents(
     request: Request,
     file1: UploadFile = File(..., description="First document (PDF or DOCX)"),

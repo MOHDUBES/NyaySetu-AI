@@ -310,8 +310,41 @@ Return a JSON object:
 }}
 """
 
-    response_text = _generate(prompt)
-    return _extract_json(response_text)
+    if not diff_sections:
+        return {
+            "ai_summary": "Both documents are identical with no textual differences found.",
+            "ai_summary_hi": "दोनों दस्तावेज़ एक जैसे हैं और इनमें कोई बदलाव नहीं मिला है।",
+            "favorable_to_user": "neither",
+            "favorable_to_user_hi": "दोनों दस्तावेज़ एक जैसे हैं",
+            "key_differences": ["No major changes detected."],
+            "key_differences_hi": ["कोई बड़ा बदलाव नहीं मिला।"],
+        }
+
+    try:
+        response_text = _generate(prompt)
+        return _extract_json(response_text)
+    except Exception:
+        # Instant fallback summary based on structural diff so user is never left waiting
+        modified_count = sum(1 for s in diff_sections if s.get("change_type") == "modified")
+        added_count = sum(1 for s in diff_sections if s.get("change_type") == "added")
+        removed_count = sum(1 for s in diff_sections if s.get("change_type") == "removed")
+
+        return {
+            "ai_summary": f"Comparison between {doc1_name} and {doc2_name} identified {len(diff_sections)} section changes ({modified_count} modified, {added_count} added, {removed_count} removed). Review the highlighted cards below for clause-by-clause changes.",
+            "ai_summary_hi": f"{doc1_name} और {doc2_name} की तुलना में कुल {len(diff_sections)} बदलाव मिले हैं ({modified_count} संशोधित, {added_count} नए जुड़े, {removed_count} हटाए गए)। नीचे दिए गए कार्ड्स में आप हर एक बदलाव को विस्तार से देख सकते हैं।",
+            "favorable_to_user": "depends",
+            "favorable_to_user_hi": "आपकी स्थिति और प्राथमिकताओं पर निर्भर करता है",
+            "key_differences": [
+                f"{modified_count} sections were revised between the two versions",
+                f"{added_count} new clauses were added in the revised version",
+                f"{removed_count} clauses were removed from the original version",
+            ],
+            "key_differences_hi": [
+                f"दोनों वर्ज़न के बीच {modified_count} खंडों में संशोधन किया गया है",
+                f"नए वर्ज़न में {added_count} नए क्लॉज़ जोड़े गए हैं",
+                f"पुराने वर्ज़न से {removed_count} क्लॉज़ हटाए गए हैं",
+            ],
+        }
 
 
 # ── RAG Question Answering (Voice-first, bilingual) ───────────────────────────

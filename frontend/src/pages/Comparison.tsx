@@ -126,7 +126,7 @@ export default function Comparison() {
                 {loading ? (
                   <>
                     <Loader2 size={18} className="animate-spin" aria-hidden="true" />
-                    Comparing Documents...
+                    Comparing Documents (AI Analysis)...
                   </>
                 ) : (
                   <>
@@ -135,7 +135,12 @@ export default function Comparison() {
                   </>
                 )}
               </button>
-              {!file1 || !file2 ? (
+              {loading && (
+                <p className="text-xs text-gold-400/80 mt-3 animate-pulse">
+                  Comparing clauses and generating bilingual summary with AI... (this takes ~10-15s)
+                </p>
+              )}
+              {!file1 || !file2 && !loading ? (
                 <p className="text-xs text-slate-500 mt-3">Upload both documents to compare</p>
               ) : null}
             </div>
