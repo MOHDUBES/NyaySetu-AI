@@ -1,8 +1,15 @@
-# ⚖️ NyaySetu AI (न्यायसेतु)
+# NyaySetu AI (न्यायसेतु)
 ### End-to-End GenAI Legal Accessibility Platform for India
 **Built for the Hack2Skill PromptWars — "AI for Legal Assistance & Access" Challenge**
 
-> ⚠️ **Persistent Legal Disclaimer**: NyaySetu AI provides **informational framing only** and is **not legal advice**. It does not establish an attorney-client relationship. Always consult a licensed legal professional for actionable decisions.
+### Live Deployment & Links
+- **Live Frontend App**: [https://nyaysetu-app.vercel.app](https://nyaysetu-app.vercel.app/)
+- **Live Backend API**: [https://nyaysetu-backend-61p5.onrender.com](https://nyaysetu-backend-61p5.onrender.com/)
+- **Interactive API Docs (Swagger)**: [https://nyaysetu-backend-61p5.onrender.com/docs](https://nyaysetu-backend-61p5.onrender.com/docs)
+- **Health Check Endpoint**: [https://nyaysetu-backend-61p5.onrender.com/health](https://nyaysetu-backend-61p5.onrender.com/health)
+- **GitHub Repository**: [https://github.com/MOHDUBES/NyaySetu-AI](https://github.com/MOHDUBES/NyaySetu-AI)
+
+> **Persistent Legal Disclaimer**: NyaySetu AI provides **informational framing only** and is **not legal advice**. It does not establish an attorney-client relationship. Always consult a licensed legal professional for actionable decisions.
 
 ---
 
