@@ -47,9 +47,32 @@ const changeConfig = {
   },
 }
 
-function DiffCard({ section, doc1Name, doc2Name }: { section: DiffSection; doc1Name: string; doc2Name: string }) {
+interface DiffCardProps {
+  section: DiffSection
+  doc1Name: string
+  doc2Name: string
+  sectionIndex: number
+  activeSpeakerId: string | null
+  onToggleSpeech: (text: string, id: string) => void
+  lang: 'hi' | 'en'
+}
+
+function DiffCard({
+  section,
+  doc1Name,
+  doc2Name,
+  sectionIndex,
+  activeSpeakerId,
+  onToggleSpeech,
+  lang,
+}: DiffCardProps) {
   const config = changeConfig[section.change_type] || changeConfig.unchanged
   if (section.change_type === 'unchanged') return null // skip unchanged for cleaner view
+
+  const doc1Id = `diff-${sectionIndex}-doc1`
+  const doc2Id = `diff-${sectionIndex}-doc2`
+  const isDoc1Speaking = activeSpeakerId === doc1Id
+  const isDoc2Speaking = activeSpeakerId === doc2Id
 
   return (
     <motion.div
@@ -69,7 +92,25 @@ function DiffCard({ section, doc1Name, doc2Name }: { section: DiffSection; doc1N
         {/* Document 1 */}
         {section.doc1_text !== '[Not present in Document 1]' && (
           <div>
-            <p className="text-xs text-slate-500 font-medium mb-1.5">{doc1Name}</p>
+            <div className="flex items-center justify-between gap-2 mb-1.5">
+              <p className="text-xs text-slate-400 font-medium truncate max-w-[200px]">{doc1Name}</p>
+              {'speechSynthesis' in window && (
+                <button
+                  type="button"
+                  onClick={() => onToggleSpeech(section.doc1_text, doc1Id)}
+                  className={`flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium transition-all ${
+                    isDoc1Speaking
+                      ? 'bg-red-500 text-white animate-pulse'
+                      : 'bg-surface-border/70 text-slate-300 hover:bg-gold-500/20 hover:text-gold-400 hover:border-gold-500/40 border border-surface-border'
+                  }`}
+                  aria-label={isDoc1Speaking ? 'Stop readout' : `Listen to ${doc1Name}`}
+                  title={isDoc1Speaking ? 'रोकें' : 'सुनें (Voice TTS)'}
+                >
+                  {isDoc1Speaking ? <Square size={11} /> : <Volume2 size={11} />}
+                  <span>{isDoc1Speaking ? (lang === 'hi' ? 'रोकें' : 'Stop') : (lang === 'hi' ? 'बोलकर सुनें' : 'Listen')}</span>
+                </button>
+              )}
+            </div>
             <div className="p-3 rounded-lg bg-black/20 text-xs text-slate-300 leading-relaxed">
               {section.doc1_text}
             </div>
@@ -79,7 +120,25 @@ function DiffCard({ section, doc1Name, doc2Name }: { section: DiffSection; doc1N
         {/* Document 2 */}
         {section.doc2_text !== '[Not present in Document 2]' && (
           <div>
-            <p className="text-xs text-slate-500 font-medium mb-1.5">{doc2Name}</p>
+            <div className="flex items-center justify-between gap-2 mb-1.5">
+              <p className="text-xs text-slate-400 font-medium truncate max-w-[200px]">{doc2Name}</p>
+              {'speechSynthesis' in window && (
+                <button
+                  type="button"
+                  onClick={() => onToggleSpeech(section.doc2_text, doc2Id)}
+                  className={`flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium transition-all ${
+                    isDoc2Speaking
+                      ? 'bg-red-500 text-white animate-pulse'
+                      : 'bg-surface-border/70 text-slate-300 hover:bg-gold-500/20 hover:text-gold-400 hover:border-gold-500/40 border border-surface-border'
+                  }`}
+                  aria-label={isDoc2Speaking ? 'Stop readout' : `Listen to ${doc2Name}`}
+                  title={isDoc2Speaking ? 'रोकें' : 'सुनें (Voice TTS)'}
+                >
+                  {isDoc2Speaking ? <Square size={11} /> : <Volume2 size={11} />}
+                  <span>{isDoc2Speaking ? (lang === 'hi' ? 'रोकें' : 'Stop') : (lang === 'hi' ? 'बोलकर सुनें' : 'Listen')}</span>
+                </button>
+              )}
+            </div>
             <div className="p-3 rounded-lg bg-black/20 text-xs text-slate-300 leading-relaxed">
               {section.doc2_text}
             </div>
@@ -123,7 +182,7 @@ const favorableLabels: Record<string, { label: string; color: string }> = {
  */
 export default function ComparisonView({ result }: ComparisonViewProps) {
   const [lang, setLang] = useState<'hi' | 'en'>('hi')
-  const [isSpeaking, setIsSpeaking] = useState(false)
+  const [activeSpeakerId, setActiveSpeakerId] = useState<string | null>(null)
 
   const changedSections = result.diff_sections.filter((s) => s.change_type !== 'unchanged')
   const favorableInfo = favorableLabels[result.favorable_to_user] || favorableLabels.depends
@@ -136,27 +195,47 @@ export default function ComparisonView({ result }: ComparisonViewProps) {
     ? result.favorable_to_user_hi
     : favorableInfo.label
 
-  const toggleSpeech = () => {
+  const handleToggleSpeech = (text: string, id: string, explicitLang?: 'hi-IN' | 'en-IN') => {
     if (!('speechSynthesis' in window)) return
 
-    if (isSpeaking) {
+    if (activeSpeakerId === id) {
       window.speechSynthesis.cancel()
-      setIsSpeaking(false)
+      setActiveSpeakerId(null)
       return
     }
 
     window.speechSynthesis.cancel()
-    const textToSpeak = `${lang === 'hi' ? 'दस्तावेज़ तुलना का सारांश: ' : 'Document comparison summary: '} ${summaryText}. ${diffs.join('. ')}`
-    const utterance = new SpeechSynthesisUtterance(textToSpeak)
-    utterance.lang = lang === 'hi' ? 'hi-IN' : 'en-IN'
+    const utterance = new SpeechSynthesisUtterance(text)
+
+    if (explicitLang) {
+      utterance.lang = explicitLang
+    } else {
+      // Auto-detect Hindi vs English from characters
+      const hasHindi = /[\u0900-\u097F]/.test(text)
+      utterance.lang = hasHindi ? 'hi-IN' : 'en-IN'
+    }
+
     utterance.rate = 0.95
     utterance.pitch = 1.0
 
-    utterance.onstart = () => setIsSpeaking(true)
-    utterance.onend = () => setIsSpeaking(false)
-    utterance.onerror = () => setIsSpeaking(false)
+    utterance.onstart = () => setActiveSpeakerId(id)
+    utterance.onend = () => setActiveSpeakerId(null)
+    utterance.onerror = () => setActiveSpeakerId(null)
 
     window.speechSynthesis.speak(utterance)
+  }
+
+  const handleSummarySpeech = () => {
+    const textToSpeak = `${lang === 'hi' ? 'दस्तावेज़ तुलना का सारांश: ' : 'Document comparison summary: '} ${summaryText}. ${diffs.join('. ')}`
+    handleToggleSpeech(textToSpeak, 'summary', lang === 'hi' ? 'hi-IN' : 'en-IN')
+  }
+
+  const handleLanguageChange = (newLang: 'hi' | 'en') => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel()
+    }
+    setActiveSpeakerId(null)
+    setLang(newLang)
   }
 
   useEffect(() => {
@@ -183,18 +262,18 @@ export default function ComparisonView({ result }: ComparisonViewProps) {
             {/* Voice Audio Readout Button */}
             {'speechSynthesis' in window && (
               <button
-                onClick={toggleSpeech}
+                onClick={handleSummarySpeech}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  isSpeaking
+                  activeSpeakerId === 'summary'
                     ? 'bg-red-500 text-white shadow-lg shadow-red-500/20 animate-pulse'
                     : 'bg-gold-500/15 text-gold-400 hover:bg-gold-500 hover:text-surface-bg border border-gold-500/30'
                 }`}
-                aria-label={isSpeaking ? 'Stop voice readout' : 'Listen to comparison aloud'}
-                title={isSpeaking ? 'Stop voice readout' : 'Listen with Voice TTS'}
+                aria-label={activeSpeakerId === 'summary' ? 'Stop voice readout' : 'Listen to comparison aloud'}
+                title={activeSpeakerId === 'summary' ? 'Stop voice readout' : 'Listen with Voice TTS'}
               >
-                {isSpeaking ? <Square size={13} /> : <Volume2 size={13} />}
+                {activeSpeakerId === 'summary' ? <Square size={13} /> : <Volume2 size={13} />}
                 <span>
-                  {isSpeaking
+                  {activeSpeakerId === 'summary'
                     ? (lang === 'hi' ? 'रोकें' : 'Stop')
                     : (lang === 'hi' ? 'बोलकर सुनें (Voice TTS)' : 'Listen Aloud')}
                 </span>
@@ -204,7 +283,7 @@ export default function ComparisonView({ result }: ComparisonViewProps) {
             {/* Language Switcher */}
             <div className="flex items-center bg-surface-card border border-surface-border rounded-lg p-0.5">
               <button
-                onClick={() => setLang('hi')}
+                onClick={() => handleLanguageChange('hi')}
                 className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
                   lang === 'hi' ? 'bg-gold-500 text-surface-bg font-semibold' : 'text-slate-400 hover:text-white'
                 }`}
@@ -212,7 +291,7 @@ export default function ComparisonView({ result }: ComparisonViewProps) {
                 हिन्दी
               </button>
               <button
-                onClick={() => setLang('en')}
+                onClick={() => handleLanguageChange('en')}
                 className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
                   lang === 'en' ? 'bg-gold-500 text-surface-bg font-semibold' : 'text-slate-400 hover:text-white'
                 }`}
@@ -300,6 +379,10 @@ export default function ComparisonView({ result }: ComparisonViewProps) {
               section={section}
               doc1Name={result.doc1_name}
               doc2Name={result.doc2_name}
+              sectionIndex={i}
+              activeSpeakerId={activeSpeakerId}
+              onToggleSpeech={handleToggleSpeech}
+              lang={lang}
             />
           ))
         )}
