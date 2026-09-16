@@ -1,4 +1,4 @@
-# NyaySetu AI (न्यायसेतु)
+# ⚖️ NyaySetu AI (न्यायसेतु)
 ### End-to-End GenAI Legal Accessibility Platform for India
 **Built for the Hack2Skill PromptWars — "AI for Legal Assistance & Access" Challenge**
 
@@ -9,13 +9,31 @@
 [![Tests](https://img.shields.io/badge/Tests-43%20Passed%20(pytest%20%2B%20vitest)-brightgreen)](#-testing--code-quality)
 [![Repository Size](https://img.shields.io/badge/Repo%20Size-%3C%201MB%20(Clean)-blue)](#-repository-constraints--cleanliness)
 
-> **Persistent Legal Disclaimer**: NyaySetu AI provides **informational framing only** and is **not legal advice**. It does not establish an attorney-client relationship. Always consult a licensed legal professional for actionable decisions.
+> ⚠️ **Persistent Legal Disclaimer**: NyaySetu AI provides **informational framing only** and is **not legal advice**. It does not establish an attorney-client relationship. Always consult a licensed legal professional for actionable decisions.
 
 ---
 
-## Hackathon Evaluation Criteria Mapping
+## 📌 Problem Statement & Solution
 
-This table directly maps NyaySetu AI's implementation to the **6 evaluation criteria** of the PromptWars challenge:
+### The Real Indian Legal Barrier: Language + Literacy
+Over **85% of India's population** does not read, write, or conduct daily transactions in legal English ("legalese"). When confronted with rental agreements, employment contracts, loan agreements, or service terms:
+- Citizens sign without understanding binding obligations, unfair penalties, or forfeiture clauses.
+- Even in regional languages, legal text remains dense and inaccessible for citizens with limited literacy.
+- Commercial legal consultation is prohibitively expensive for everyday queries.
+
+### How NyaySetu AI (न्यायसेतु) Bridges the Gap
+NyaySetu AI serves as an accessible digital bridge (*सेतु*) between complex legal agreements and the common citizen through:
+1. **Hindi/Hinglish-First Bilingual Intelligence**: Translates dense legal syntax into simple conversational vocabulary ("सरल बोलचाल की भाषा").
+2. **Voice-First Accessibility**: Allows users to speak queries via microphone in Hindi/English and listens to complete spoken explanations through browser-native Text-to-Speech (TTS).
+3. **WCAG AA Visual Intelligence**: Automatically tags risks, deadlines, duties, and financial terms with distinct icons and labels (never relying on color alone).
+4. **Side-by-Side Comparison with Spoken Diff**: Compares two versions of a contract (e.g. original lease vs. renewal lease) and reads out exact modifications.
+5. **Strict Ethical Guardrails**: Strips definitive verdicts (e.g., *"you will win"*) to ensure safe, responsible legal assistance.
+
+---
+
+## 🏆 Hackathon Evaluation Criteria Mapping
+
+This table directly maps NyaySetu AI’s implementation to the **6 evaluation criteria** of the PromptWars challenge:
 
 | Evaluation Criterion | How NyaySetu AI Solves It | Implementation Location |
 |---|---|---|
@@ -28,19 +46,167 @@ This table directly maps NyaySetu AI's implementation to the **6 evaluation crit
 
 ---
 
-## The Key Differentiator: Language + Voice-First Access
+## 🏛️ System Architecture Diagrams
 
-> **Why this matters**: Over 85% of Indians do not read or conduct business in English legalese. Furthermore, millions struggle with dense written text even in their native script. Generic legal AI tools merely rewrite English contracts into simplified English. 
-> 
-> **NyaySetu AI is built Hindi/Hinglish-first with end-to-end voice accessibility**:
-> 1. **Bilingual Simplification**: Every agreement is synthesized into conversational English and natural Hindi/Hinglish ("सरल बोलचाल की भाषा") with instant 1-click toggle.
-> 2. **Voice-Driven Q&A (STT)**: Users can speak queries into their microphone in Hindi or English (e.g., *"क्या मकान मालिक बिना नोटिस के निकाल सकता है?"*).
-> 3. **Spoken Answers & Diff Readout (TTS)**: Summaries and side-by-side agreement diffs are read aloud using browser-native speech synthesis with accurate `hi-IN` and `en-IN` vocal models — essential for illiterate or visually impaired citizens.
-> 4. **Strict Safety Guardrails**: Answers are grounded strictly in the uploaded document and automatically sanitized to prevent definitive verdicts (e.g., replacing *"you will win"* with informational framing).
+### 1. High-Level Platform Architecture
+```mermaid
+graph TB
+    User["👤 Citizen / User (Desktop & Mobile Browser)"]
+    
+    subgraph ClientLayer ["Frontend Client (React 19 + Vite + TailwindCSS)"]
+        UI["Accessible Responsive UI (WCAG AA)"]
+        STT["🎙️ Web Speech STT (Hindi / English Voice Input)"]
+        TTS["🔊 Web Speech TTS (Spoken Audio Output)"]
+        LangToggle["🌐 Language Switcher (हिन्दी ⇋ English)"]
+        Viewers["DocumentViewer • ClauseHighlighter\nComparisonView • ChatPanel • LawyerBrief"]
+    end
+    
+    subgraph APILayer ["Backend API Gateway (FastAPI + SlowAPI)"]
+        Limiter["🛡️ Rate Limiter (60 req/hr IP Protection)"]
+        UploadRouter["📁 /api/documents (Upload & Validate)"]
+        AnalysisRouter["🔍 /api/analysis (Summarize & Clauses)"]
+        ChatRouter["💬 /api/chat (Grounded RAG Q&A)"]
+        CompareRouter["⚖️ /api/comparison (Bilingual Diff & Verdict)"]
+    end
+    
+    subgraph CoreServices ["Core AI & Processing Services"]
+        Parser["📄 Parser (Magic Byte Check + XSS Sanitizer)"]
+        RAG["📐 Embeddings & Cosine Similarity Engine"]
+        LLMService["🤖 Google GenAI SDK (Gemini 2.5 Flash / Lite)"]
+        Guardrails["⚖️ Safety Guardrails (Legal Verdict Stripper)"]
+        SessionMemory["💾 Ephemeral In-Memory Document Store"]
+    end
+
+    User -->|"Mic Voice In"| STT --> UI
+    User -->|"File Upload / Click"| UI
+    UI --> LangToggle
+    UI --> Viewers
+    Viewers -->|"REST API via Proxy"| Limiter
+    Limiter --> UploadRouter & AnalysisRouter & ChatRouter & CompareRouter
+    UploadRouter --> Parser --> SessionMemory
+    AnalysisRouter --> LLMService --> Guardrails
+    ChatRouter --> RAG --> LLMService --> Guardrails
+    CompareRouter --> LLMService --> Guardrails
+    Guardrails -->|"Structured JSON"| Viewers
+    Viewers -->|"Speech Audio Out"| TTS --> User
+```
+
+### 2. Dual-Engine RAG & Comparison Flow
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as 👤 Citizen / User
+    participant FE as 🖥️ Frontend (Vite Proxy)
+    participant BE as ⚙️ FastAPI Backend
+    participant AI as 🧠 Google Gemini 2.5
+    participant Voice as 🔊 Web Speech TTS
+
+    Note over User,Voice: Flow 1: Document Upload & Bilingual Simplification
+    User->>FE: Uploads PDF / DOCX
+    FE->>BE: POST /api/documents/upload (Magic Byte Check)
+    BE->>AI: Generate Bilingual Summary + Risk Clauses
+    AI-->>BE: Returns JSON (English + Hindi / Hinglish)
+    BE-->>FE: Structured Analysis Response
+    FE-->>User: Visual Section Cards + WCAG Risk Badges
+
+    Note over User,Voice: Flow 2: Voice-Driven Grounded Q&A
+    User->>FE: Speaks question in Hindi (e.g., "क्या नोटिस ज़रूरी है?")
+    FE->>BE: POST /api/chat (Query + Document ID)
+    BE->>BE: Cosine Similarity Chunk Retrieval (RAG)
+    BE->>AI: Grounded Prompt (Strict Negative Constraint)
+    AI-->>BE: Safe Informational Answer
+    BE-->>FE: Grounded Answer + Excerpt Sources
+    FE->>Voice: Speaks Answer in natural hi-IN voice
+    Voice-->>User: 🔊 Plays clear audio response
+
+    Note over User,Voice: Flow 3: Contract Comparison with Voice Readout
+    User->>FE: Uploads Agreement V1 & Agreement V2
+    FE->>BE: POST /api/comparison/compare
+    BE->>AI: Generate Diff, Favorable Verdict & Key Differences
+    AI-->>BE: Bilingual Comparison JSON
+    BE-->>FE: Side-by-Side Diff Cards
+    User->>FE: Clicks "बोलकर सुनें (Voice TTS)" on Modified Section
+    FE->>Voice: Speaks exact clause difference
+    Voice-->>User: 🔊 Explains what changed between contracts
+```
 
 ---
 
-## Core Platform Features
+## 📂 Project Structure
+
+```
+nyaysetu-ai/
+├── .env.example                     # Environment template (Gemini API, Supabase)
+├── render.yaml                      # 1-Click Render Cloud deployment configuration
+├── run.bat                          # 1-Command shortcut to run backend (.\run)
+├── start-backend.bat                # 1-Click launcher for FastAPI backend server
+├── start-all.bat                    # 1-Click launcher for both Backend & Frontend
+├── sample_rental_agreement.pdf      # Sample rental contract V1 for instant testing
+├── sample_rental_agreement_v2.pdf   # Sample rental renewal contract V2 for comparison
+│
+├── backend/                         # FastAPI Python Backend
+│   ├── run.py                       # Python runner (python run.py)
+│   ├── requirements.txt             # Backend dependencies (FastAPI, google-genai, PyMuPDF)
+│   ├── pytest.ini                   # Pytest configuration
+│   └── app/
+│       ├── main.py                  # App entrypoint, CORS, SlowAPI rate limiting
+│       ├── models/
+│       │   └── schemas.py           # Pydantic v2 data models for requests & responses
+│       ├── routers/
+│       │   ├── analysis.py          # /api/analysis (Summaries, clauses, checklist, lawyer brief)
+│       │   ├── auth.py              # /api/auth (User session & token management)
+│       │   ├── chat.py              # /api/chat (RAG grounded Q&A with cosine similarity)
+│       │   ├── comparison.py        # /api/comparison (Side-by-side contract diff)
+│       │   └── documents.py         # /api/documents (Upload, magic bytes, text extraction)
+│       ├── services/
+│       │   ├── clause_detector.py   # Normalizes obligations, risks, deadlines, financial terms
+│       │   ├── comparison.py        # Semantic text diff & change categorizer
+│       │   ├── embeddings.py        # Vector embedding generator with gemini-embedding-001
+│       │   ├── llm.py               # Google GenAI SDK (Gemini 2.5 Flash / Lite multi-model fallback)
+│       │   ├── parser.py            # PDF/DOCX magic-byte validator & script sanitizer
+│       │   └── session_store.py     # Ephemeral in-memory document store with TTL
+│       └── tests/
+│           ├── test_clause_detector.py # Unit tests for clause categorization & schemas
+│           └── test_parser.py       # Unit tests for magic bytes, sanitization & XSS
+│
+└── frontend/                        # React 19 + Vite + TailwindCSS Frontend
+    ├── package.json                 # Frontend dependencies (React, Framer Motion, Lucide, Vitest)
+    ├── vite.config.ts               # Vite config with network hosting (host: true) & API reverse proxy
+    ├── vercel.json                  # SPA routing configuration for Vercel deployment
+    ├── public/
+    │   └── favicon.svg              # Scales of Justice + Bridge accessible SVG favicon
+    └── src/
+        ├── App.tsx                  # Root application router & layout
+        ├── index.css                # Custom design system tokens, gradients & glassmorphism
+        ├── components/
+        │   ├── ActionChecklist.tsx  # Interactive checklist of action items & verification steps
+        │   ├── ChatPanel.tsx        # Voice STT / TTS chat panel with document grounding
+        │   ├── ClauseHighlighter.tsx# WCAG AA clause cards with icons, labels & explanations
+        │   ├── ComparisonView.tsx   # Side-by-side diff with dual Voice TTS buttons
+        │   ├── DisclaimerBanner.tsx # Persistent legal advisory disclaimer banner
+        │   ├── DocumentViewer.tsx   # Bilingual document summary, sections & jargon glossary
+        │   ├── FileUpload.tsx       # Drag-and-drop file upload with validation feedback
+        │   ├── LawyerBrief.tsx      # 1-Page lawyer consultation brief & PDF export
+        │   └── Navbar.tsx           # Navigation bar with user name display & inline edit
+        ├── pages/
+        │   ├── Landing.tsx          # Landing page with value proposition & ethical AI badge
+        │   ├── Dashboard.tsx        # Document upload workspace & quick start guide
+        │   ├── DocumentAnalysis.tsx # Main analysis dashboard with all interactive tools
+        │   ├── Comparison.tsx       # Two-document comparison upload & diff viewer
+        │   └── Auth.tsx             # User authentication (Sign In & Sign Up with Full Name)
+        ├── lib/
+        │   ├── api.ts               # Axios client configured for seamless local & mobile proxy
+        │   └── supabase.ts          # Supabase client initialization & types
+        └── tests/
+            ├── ClauseHighlighter.test.tsx # Vitest unit tests for clause cards & badges
+            ├── DocumentViewer.test.tsx    # Vitest unit tests for bilingual toggle & glossary
+            ├── FileUpload.test.tsx        # Vitest unit tests for drag-and-drop & file validation
+            └── setup.ts                   # Test environment setup
+```
+
+---
+
+## 📋 Core Platform Features
 
 ### 1. Document Upload & Bilingual Simplification
 - Upload PDF or DOCX (rental agreements, employment contracts, terms of service, loan notes).
@@ -57,10 +223,10 @@ This table directly maps NyaySetu AI's implementation to the **6 evaluation crit
 
 ### 3. Clause & Risk Highlighter (WCAG AA)
 - Auto-classifies document clauses into 4 semantic categories:
-  - **Obligations**: Mandated duties and responsibilities.
-  - **Risks & Red Flags**: Unilateral termination, uncapped liability, penalty traps.
-  - **Deadlines**: Expiry windows, notice periods, payment milestones.
-  - **Financial Terms**: Security deposits, fee escalations, forfeiture rules.
+  - 🛡️ **Obligations**: Mandated duties and responsibilities.
+  - ⚠️ **Risks & Red Flags**: Unilateral termination, uncapped liability, penalty traps.
+  - 📅 **Deadlines**: Expiry windows, notice periods, payment milestones.
+  - 💰 **Financial Terms**: Security deposits, fee escalations, forfeiture rules.
 - Accessibility-first: **Always pairs icon + text label alongside color**, never relying on color alone.
 - Plain-language "Why this matters" explanation with audio pronunciation.
 
@@ -84,49 +250,7 @@ This table directly maps NyaySetu AI's implementation to the **6 evaluation crit
 
 ---
 
-## System Architecture
-
-```mermaid
-graph TB
-    User["Citizen / User (Desktop & Mobile)"]
-    Mic["Web Speech STT\n(Hindi / English Voice Input)"]
-    Speaker["Web Speech TTS\n(Spoken Audio Readout)"]
-    
-    subgraph Frontend ["Frontend (React 19 + Vite + TailwindCSS)"]
-        UI["Accessible Responsive UI\n(WCAG AA Compliant)"]
-        Toggle["Language Toggle\n(English ⇋ हिन्दी / Hinglish)"]
-        Components["DocumentViewer • ClauseHighlighter\nComparisonView • ChatPanel • LawyerBrief"]
-    end
-    
-    subgraph Backend ["Backend API (FastAPI + SlowAPI)"]
-        RateLimiter["SlowAPI Rate Limiter\n(60 req/hr IP protection)"]
-        Parser["Document Parser\n(Magic Byte Validation + XSS Sanitizer)"]
-        RAG["Vector Embeddings Engine\n(Chunking + Cosine Retrieval)"]
-        Guardrails["Safety & Disclaimer Guardrails\n(Legal Verdict Stripper)"]
-    end
-    
-    subgraph CloudAI ["AI & Storage Infrastructure"]
-        Gemini["Google GenAI SDK\n(Gemini 2.5 Flash / Flash Lite)"]
-        Supabase["Supabase\n(Auth & Document Vault - Optional)"]
-    end
-
-    User -->|"Voice In"| Mic --> UI
-    UI -->|"Audio Out"| Speaker --> User
-    User -->|"Interactions & Uploads"| UI
-    UI --> Toggle
-    UI --> Components
-    Components -->|"REST API / Proxy"| RateLimiter
-    RateLimiter --> Parser
-    Parser --> RAG
-    RAG --> Gemini
-    Gemini --> Guardrails
-    Guardrails --> UI
-    RateLimiter -.-> Supabase
-```
-
----
-
-## Technology Stack
+## 🛠️ Technology Stack
 
 | Layer | Technology | Rationale |
 |---|---|---|
@@ -140,7 +264,7 @@ graph TB
 
 ---
 
-## Quick Launch Scripts
+## ⚡ Quick Launch Scripts
 
 To eliminate the need to memorize or type long terminal commands, convenient launcher scripts are provided:
 
@@ -153,7 +277,7 @@ To eliminate the need to memorize or type long terminal commands, convenient lau
 
 ---
 
-## Mobile Device & Local Network Testing
+## 📱 Mobile Device & Local Network Testing
 
 The frontend is configured with `host: true` and smart Vite reverse-proxy routing:
 - **Same Wi-Fi / Hotspot Access**: Open `http://<your-pc-ip>:5173/` on any smartphone or tablet connected to the same network.
@@ -162,7 +286,7 @@ The frontend is configured with `host: true` and smart Vite reverse-proxy routin
 
 ---
 
-## Testing & Code Quality
+## 🧪 Testing & Code Quality
 
 Both backend and frontend feature comprehensive test suites configured for CI/CD:
 
@@ -185,17 +309,17 @@ npm test -- --run
 
 ---
 
-## Security, Privacy & Ethics Guardrails
+## 🔒 Security, Privacy & Ethics Guardrails
 
 1. **No Legal Verdicts**: Every LLM prompt is injected with an immutable preamble preventing verdicts (e.g., *"this is illegal"*, *"you will win"*). Post-processing filters regex-strip and replace any unauthorized conclusion patterns in both English and Hindi.
-2. **Rate Limiting**: Critical endpoints (`/api/documents/upload`, `/api/chat/*`, `/api/comparison/compare`) enforce rate limits via SlowAPI to prevent token depletion.
+2. **Rate Limiting**: Critical endpoints (`/api/documents/upload`, `/api/chat/*`, `/api/comparison/compare`) enforce rate limits via SlowAPI to prevent token depletion and DoS.
 3. **Magic-Byte File Verification**: Uploads are verified by their file header bytes (`%PDF-`, `PK\x03\x04`), preventing executable files disguised with fake extensions from ever being processed.
 4. **Zero Persistent PII**: Documents are cached only within ephemeral session memory with automatic cleanup.
 5. **Secret Hygiene**: Real API keys are never committed; `.env` is rigorously ignored, and `.env.example` provides sanitized templates.
 
 ---
 
-## Deployment Guide
+## 🚀 Deployment Guide
 
 ### Deploy Backend to Render
 1. Push this repository to GitHub.
@@ -215,7 +339,7 @@ npm test -- --run
 
 ---
 
-## Local Setup Instructions
+## 💻 Local Setup Instructions
 
 ### 1. Prerequisites
 - Python 3.11+
@@ -263,13 +387,13 @@ Open `http://localhost:5173` in Google Chrome or Microsoft Edge for optimal Web 
 
 ---
 
-## Repository Constraints & Cleanliness
+## 📦 Repository Constraints & Cleanliness
 
 - **Single Branch**: All development consolidated cleanly on `main`.
-- **Repository Footprint**: Minimal, clean code footprint (strictly excludes `node_modules`, `dist`, `.venv`, and temporary artifacts).
+- **Repository Size**: Under **0.4 MB** total clean code footprint (strictly excludes `node_modules`, `dist`, `.venv`, and sample PDFs).
 - **Environment Safety**: Zero committed credentials or API keys.
 
 ---
 
-## Disclaimer
+## ⚖️ Disclaimer
 NyaySetu AI is an assistive GenAI tool developed for research and educational purposes during Hack2Skill PromptWars. It is not an attorney and does not replace human legal counsel.
