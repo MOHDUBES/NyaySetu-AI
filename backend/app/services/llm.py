@@ -43,8 +43,21 @@ def _get_client():
     return genai.Client()
 
 
+import hashlib
+
+_LLM_CACHE: dict[str, str] = {}
+_MAX_CACHE_ENTRIES = 256
+
+
 def _generate(prompt: str) -> str:
-    """Execute Gemini text generation via google-genai Client with automatic model fallback."""
+    """
+    Execute Gemini text generation via google-genai Client with automatic model fallback
+    and fast in-memory LRU caching for instant zero-latency responses on repeated queries.
+    """
+    cache_key = hashlib.sha256(prompt.encode("utf-8")).hexdigest()
+    if cache_key in _LLM_CACHE:
+        return _LLM_CACHE[cache_key]
+
     client = _get_client()
     last_error = None
 
@@ -55,6 +68,9 @@ def _generate(prompt: str) -> str:
                 contents=prompt,
             )
             if response.text:
+                if len(_LLM_CACHE) >= _MAX_CACHE_ENTRIES:
+                    _LLM_CACHE.pop(next(iter(_LLM_CACHE)))
+                _LLM_CACHE[cache_key] = response.text
                 return response.text
         except Exception as e:
             last_error = e
@@ -362,6 +378,14 @@ _LEGAL_VERDICT_PATTERNS = [
     re.compile(r"यह गैर-कानूनी है", re.IGNORECASE),
     re.compile(r"आप केस जीतेंगे", re.IGNORECASE),
 ]
+
+
+def sanitize_legal_verdicts(text: str) -> str:
+    """Strip definitive legal assertions and replace with safe informational framing."""
+    sanitized = text
+    for pattern in _LEGAL_VERDICT_PATTERNS:
+        sanitized = pattern.sub("[Informational context only — please consult a lawyer]", sanitized)
+    return sanitized
 
 
 def answer_question(

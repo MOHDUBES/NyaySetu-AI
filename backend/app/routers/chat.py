@@ -2,6 +2,7 @@
 NyaySetu AI — Chat Router
 RAG-based document Q&A with scope enforcement.
 """
+import asyncio
 from fastapi import APIRouter, HTTPException, Request
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -39,13 +40,14 @@ async def chat_with_document(
     embedded_chunks = [c for c in session.chunks if c.embedding is not None]
     if not embedded_chunks and session.chunks:
         from app.services.embeddings import generate_embeddings
-        session.chunks = generate_embeddings(session.chunks[:15]) + session.chunks[15:]
+        new_embedded = await asyncio.to_thread(generate_embeddings, session.chunks[:15])
+        session.chunks = new_embedded + session.chunks[15:]
         embedded_chunks = [c for c in session.chunks if c.embedding is not None]
 
     # Retrieve relevant chunks via semantic search
     relevant_chunks = []
     if embedded_chunks:
-        relevant_chunks = retrieve_relevant_chunks(question, embedded_chunks, k=5)
+        relevant_chunks = await asyncio.to_thread(retrieve_relevant_chunks, question, embedded_chunks, k=5)
 
     # Fallback to top document chunks if semantic retrieval had low similarity
     if not relevant_chunks and session.chunks:
@@ -66,11 +68,12 @@ async def chat_with_document(
         )
 
     try:
-        result = answer_question(
+        result = await asyncio.to_thread(
+            answer_question,
             question,
             relevant_chunks,
             session.filename,
-            language=body.language or "auto"
+            language=body.language or "auto",
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate answer: {str(e)}")

@@ -18,4 +18,18 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    target: 'esnext',
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-motion': ['framer-motion', 'lucide-react'],
+          'vendor-pdf': ['jspdf', 'html2canvas'],
+          'vendor-supabase': ['@supabase/supabase-js'],
+        },
+      },
+    },
+  },
 })

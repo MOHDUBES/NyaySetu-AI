@@ -103,27 +103,35 @@ def generate_embeddings(chunks: list[TextChunk]) -> list[TextChunk]:
     return chunks
 
 
-def embed_query(query: str) -> list[float]:
-    """Generate an embedding for a search query."""
+from functools import lru_cache
+
+@lru_cache(maxsize=512)
+def _cached_embed_query(query: str) -> tuple[float, ...]:
+    """Cached query embedding helper for instant zero-latency retrieval on repeated questions."""
     if not _client:
-        return _pseudo_embedding(query)
+        return tuple(_pseudo_embedding(query))
     try:
         result = _client.models.embed_content(
             model=EMBEDDING_MODEL,
             contents=query,
         )
         if result.embeddings:
-            return result.embeddings[0].values
-        return _pseudo_embedding(query)
+            return tuple(result.embeddings[0].values)
+        return tuple(_pseudo_embedding(query))
     except Exception:
-        return _pseudo_embedding(query)
+        return tuple(_pseudo_embedding(query))
+
+
+def embed_query(query: str) -> list[float]:
+    """Generate an embedding for a search query with in-memory caching."""
+    return list(_cached_embed_query(query))
 
 
 # ── Retrieval ─────────────────────────────────────────────────────────────────
 def cosine_similarity(a: list[float], b: list[float]) -> float:
     """Compute cosine similarity between two embedding vectors."""
-    a_arr = np.array(a, dtype=float)
-    b_arr = np.array(b, dtype=float)
+    a_arr = np.array(a, dtype=np.float32)
+    b_arr = np.array(b, dtype=np.float32)
     norm_a = np.linalg.norm(a_arr)
     norm_b = np.linalg.norm(b_arr)
     if norm_a == 0 or norm_b == 0:
@@ -138,22 +146,47 @@ def retrieve_relevant_chunks(
     min_similarity: float = 0.1,
 ) -> list[str]:
     """
-    Retrieve the top-k most relevant chunks for a given query.
-    Returns list of chunk texts sorted by relevance.
+    Retrieve top-k most relevant chunks using vectorized matrix cosine similarity.
+    High-performance batch linear algebra via NumPy (O(1) matrix product).
     """
-    query_embedding = embed_query(query)
-    scored: list[tuple[float, str]] = []
+    if not chunks:
+        return []
 
-    for chunk in chunks:
-        if chunk.embedding is None:
-            continue
-        score = cosine_similarity(query_embedding, chunk.embedding)
-        if score >= min_similarity:
-            scored.append((score, chunk.text))
+    valid_chunks = [c for c in chunks if c.embedding is not None]
+    if not valid_chunks:
+        return [c.text for c in chunks[:k]]
 
-    # Sort by score descending
-    scored.sort(key=lambda x: x[0], reverse=True)
-    return [text for _, text in scored[:k]]
+    query_vec = np.array(embed_query(query), dtype=np.float32)
+    q_norm = np.linalg.norm(query_vec)
+    if q_norm == 0:
+        return [c.text for c in valid_chunks[:k]]
+
+    matrix = np.array([c.embedding for c in valid_chunks], dtype=np.float32)
+    m_norms = np.linalg.norm(matrix, axis=1)
+    
+    # Avoid zero division
+    # Verify dimension alignment
+    if matrix.shape[1] == query_vec.shape[0]:
+        scores = np.dot(matrix, query_vec) / (m_norms * q_norm)
+    else:
+        min_dim = min(matrix.shape[1], query_vec.shape[0])
+        m_slice = matrix[:, :min_dim]
+        q_slice = query_vec[:min_dim]
+        m_slice_norms = np.linalg.norm(m_slice, axis=1)
+        m_slice_norms[m_slice_norms == 0] = 1.0
+        q_slice_norm = float(np.linalg.norm(q_slice)) or 1.0
+        scores = np.dot(m_slice, q_slice) / (m_slice_norms * q_slice_norm)
+    
+    ranked_indices = np.argsort(scores)[::-1]
+    
+    results: list[str] = []
+    for idx in ranked_indices:
+        if scores[idx] >= min_similarity:
+            results.append(valid_chunks[idx].text)
+            if len(results) >= k:
+                break
+
+    return results if results else [valid_chunks[i].text for i in ranked_indices[:k]]
 
 
 # ── Fallback Pseudo-Embeddings ────────────────────────────────────────────────

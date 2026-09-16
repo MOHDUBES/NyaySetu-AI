@@ -2,6 +2,7 @@
 NyaySetu AI — Analysis Router
 Document summarization, clause detection, checklist, and lawyer brief endpoints.
 """
+import asyncio
 from fastapi import APIRouter, HTTPException, Request
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -25,17 +26,20 @@ limiter = Limiter(key_func=get_remote_address)
 async def summarize(document_id: str, request: Request) -> SummaryResponse:
     """
     Generate a plain-language summary and section explanations for a document.
+    Reuses cached summary if already generated for instant 0ms response.
     """
     session = get_session(document_id)
     if not session:
         raise HTTPException(status_code=404, detail="Document not found.")
 
-    try:
-        result = summarize_document(session.parsed.text, session.filename)
-        # Cache in session for later use
-        session.summary = result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Summarization failed: {str(e)}")
+    if session.summary:
+        result = session.summary
+    else:
+        try:
+            result = await asyncio.to_thread(summarize_document, session.parsed.text, session.filename)
+            session.summary = result
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Summarization failed: {str(e)}")
 
     sections = [
         {
@@ -63,16 +67,20 @@ async def summarize(document_id: str, request: Request) -> SummaryResponse:
 async def detect_document_clauses(document_id: str, request: Request) -> ClausesResponse:
     """
     Detect and categorize clauses in the document by type (obligation/risk/deadline/financial).
+    Non-blocking execution with in-memory session caching.
     """
     session = get_session(document_id)
     if not session:
         raise HTTPException(status_code=404, detail="Document not found.")
 
-    try:
-        clauses = detect_clauses(session.parsed.text)
-        session.clauses = clauses
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Clause detection failed: {str(e)}")
+    if session.clauses:
+        clauses = session.clauses
+    else:
+        try:
+            clauses = await asyncio.to_thread(detect_clauses, session.parsed.text)
+            session.clauses = clauses
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Clause detection failed: {str(e)}")
 
     counts = summarize_clause_counts(clauses)
 
@@ -96,20 +104,18 @@ async def generate_document_checklist(document_id: str, request: Request) -> Che
     if not session:
         raise HTTPException(status_code=404, detail="Document not found.")
 
-    # Ensure we have summary and clauses
     summary = session.summary or {}
     clauses = [c.model_dump() for c in (session.clauses or [])]
 
     if not summary:
-        # Run summarization if not cached
         try:
-            summary = summarize_document(session.parsed.text, session.filename)
+            summary = await asyncio.to_thread(summarize_document, session.parsed.text, session.filename)
             session.summary = summary
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to generate checklist context: {str(e)}")
 
     try:
-        result = generate_checklist(summary, clauses)
+        result = await asyncio.to_thread(generate_checklist, summary, clauses)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Checklist generation failed: {str(e)}")
 
@@ -136,13 +142,13 @@ async def generate_document_lawyer_brief(document_id: str, request: Request) -> 
 
     if not summary:
         try:
-            summary = summarize_document(session.parsed.text, session.filename)
+            summary = await asyncio.to_thread(summarize_document, session.parsed.text, session.filename)
             session.summary = summary
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to generate brief context: {str(e)}")
 
     try:
-        result = generate_lawyer_brief(summary, clauses)
+        result = await asyncio.to_thread(generate_lawyer_brief, summary, clauses)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Lawyer brief generation failed: {str(e)}")
 

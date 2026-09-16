@@ -2,6 +2,7 @@
 NyaySetu AI — Comparison Router
 Upload two documents and get a structural + AI-powered comparison.
 """
+import asyncio
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -39,16 +40,18 @@ async def compare_two_documents(
         )
 
     try:
-        doc1 = parse_document(file1_bytes, file1.filename or "Document 1")
-        doc2 = parse_document(file2_bytes, file2.filename or "Document 2")
+        doc1 = await asyncio.to_thread(parse_document, file1_bytes, file1.filename or "Document 1")
+        doc2 = await asyncio.to_thread(parse_document, file2_bytes, file2.filename or "Document 2")
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to parse documents: {str(e)}")
 
     try:
-        result = compare_documents(
-            doc1, doc2,
+        result = await asyncio.to_thread(
+            compare_documents,
+            doc1,
+            doc2,
             doc1_name=file1.filename or "Document 1",
             doc2_name=file2.filename or "Document 2",
         )

@@ -2,6 +2,7 @@
 NyaySetu AI — Documents Router
 File upload, parsing, and document management endpoints.
 """
+import asyncio
 import uuid
 from typing import Annotated
 
@@ -24,12 +25,12 @@ MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024  # 20 MB
 @limiter.limit("10/hour")
 async def upload_document(
     request: Request,
-    file: UploadFile = File(...),
+    file: UploadFile = File(..., description="Legal document (PDF or DOCX)"),
 ) -> UploadResponse:
     """
     Upload a legal document (PDF or DOCX) for analysis.
     - Validates file type via magic bytes
-    - Parses text and structure
+    - Parses text and structure non-blockingly
     - Generates embeddings for RAG chat
     - Stores in session store
     """
@@ -54,7 +55,7 @@ async def upload_document(
     filename = file.filename or "document"
 
     try:
-        parsed = parse_document(file_bytes, filename)
+        parsed = await asyncio.to_thread(parse_document, file_bytes, filename)
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
@@ -63,8 +64,8 @@ async def upload_document(
     # Generate chunks and embed top initial chunks quickly for immediate readiness
     chunks = chunk_text(parsed.text)
     if chunks:
-        # Embed first 10 key chunks fast (<1s)
-        initial_chunks = generate_embeddings(chunks[:10])
+        # Embed first 10 key chunks fast (<1s) non-blockingly
+        initial_chunks = await asyncio.to_thread(generate_embeddings, chunks[:10])
         chunks = initial_chunks + chunks[10:]
 
     document_id = str(uuid.uuid4())
