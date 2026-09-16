@@ -46,6 +46,18 @@ This table directly maps NyaySetu AI’s implementation to the **6 evaluation cr
 
 ---
 
+## 🌟 The Key Differentiator: Language + Voice-First Access
+
+> **Why this matters**: Over 85% of Indians do not read or conduct business in English legalese. Furthermore, millions struggle with dense written text even in their native script. Generic legal AI hackathon projects merely rewrite English contracts into simplified English. 
+> 
+> **NyaySetu AI is built Hindi/Hinglish-first with full voice input/output**:
+> 1. **Bilingual Simplification**: Every agreement is synthesized into both conversational English and natural Hindi/Hinglish ("सरल बोलचाल की भाषा") with instant 1-click toggle.
+> 2. **Voice-Driven Q&A (STT)**: Users can speak questions into the microphone in Hindi or English (e.g., *"क्या मकान मालिक बिना नोटिस के निकाल सकता है?"*).
+> 3. **Spoken Answers (TTS)**: Answers are read aloud using browser-native speech synthesis with accurate `hi-IN` and `en-IN` vocal models — critical for illiterate or visually impaired citizens.
+> 4. **Strict Safety Guardrails**: Answers are scoped strictly to the uploaded document and automatically sanitized to prevent definitive verdicts (e.g., changing *"you will win"* to informational framing).
+
+---
+
 ## 🏛️ System Architecture Diagrams
 
 ### 1. High-Level Platform Architecture
@@ -206,46 +218,44 @@ nyaysetu-ai/
 
 ---
 
-## 📋 Core Platform Features
+## 📋 Core Features (In Priority Order)
 
 ### 1. Document Upload & Bilingual Simplification
-- Upload PDF or DOCX (rental agreements, employment contracts, terms of service, loan notes).
-- Magic-byte validation & sanitization removes any script or binary executable injections before processing.
-- Google GenAI SDK (Gemini 2.5 Flash / Flash Lite) generates structured summaries in **both plain English and conversational Hindi**.
+- Upload PDF or DOCX (rental agreements, employment letters, ToS, loan notes).
+- Magic-byte validation & sanitization removes any script/eval injections before processing.
+- Gemini 2.5 generates structured summaries in **both plain English and Hindi/Hinglish**.
 - Section-by-section breakdown with original excerpts vs. plain-language explanations.
-- Interactive Jargon Glossary translating intimidating legal terms into clear vocabulary.
+- Interactive Jargon Glossary translating intimidating legal terms into conversational vocabulary.
 
 ### 2. Voice-First Q&A with Document Grounding (RAG)
-- Users speak queries using their microphone in Hindi or English with automatic pause detection and keyboard submission.
+- User speaks queries using the microphone in Hindi or English.
 - Semantic vector chunking with cosine similarity retrieves the top relevant excerpts.
-- Response is framed informationally and spoken back via browser TTS.
-- Strict refusal and boundary enforcement when queries fall outside document scope.
+- Response is framed informationally and spoken back to the user via TTS.
+- Strict refusal when queries fall outside the document scope.
 
 ### 3. Clause & Risk Highlighter (WCAG AA)
-- Auto-classifies document clauses into 4 semantic categories:
-  - 🛡️ **Obligations**: Mandated duties and responsibilities.
-  - ⚠️ **Risks & Red Flags**: Unilateral termination, uncapped liability, penalty traps.
-  - 📅 **Deadlines**: Expiry windows, notice periods, payment milestones.
-  - 💰 **Financial Terms**: Security deposits, fee escalations, forfeiture rules.
-- Accessibility-first: **Always pairs icon + text label alongside color**, never relying on color alone.
-- Plain-language "Why this matters" explanation with audio pronunciation.
+- Auto-classifies document terms into 4 semantic categories:
+  - 🛡️ **Obligations (Blue)**: Mandated duties.
+  - ⚠️ **Risks & Red Flags (Red)**: Liabilities, uncapped penalties, unilateral changes.
+  - 📅 **Deadlines (Amber)**: Expiry dates, notice windows.
+  - 💰 **Financial Terms (Green)**: Deposits, fees, forfeiture clauses.
+- Adheres to accessibility requirements: **Always pairs icon + text label alongside color**, never relying on color alone.
+- Plain-language "Why this matters" tooltip with audio pronunciation.
 
-### 4. Bilingual Document Comparison Mode with Voice TTS
-- Compares two versions of an agreement side-by-side (e.g., Original Lease vs. Renewal Lease).
+### 4. Document Comparison Mode with Voice TTS
+- Compares two versions of a document side-by-side (e.g., old lease vs. renewal lease).
 - Semantic diff identifies additions, deletions, and modifications.
-- AI generates overall summary, verdict, and numbered key differences in Hindi and English.
-- **Dedicated Voice TTS**:
-  - Main comparison summary read-aloud button (**बोलकर सुनें** / **Listen Aloud**).
-  - Individual **बोलकर सुनें (Voice TTS)** buttons on both Document 1 and Document 2 modified sections so users can hear exactly what each contract version states.
+- AI generates a summary indicating which version is more favorable to the tenant/employee.
+- Dual Voice TTS buttons on both Doc 1 and Doc 2 diff sections for low-literacy users.
 
 ### 5. "Prepare for a Lawyer" Brief Generator
-- Converts complex contracts into an organized 1-page consultation brief.
+- Converts complex contracts into a 1-page consultation brief.
 - Generates categorized concerns, financial liabilities, and specific, targeted questions to ask an attorney.
-- Instant PDF download formatted for efficient reading by legal counsel during billable consultations.
+- Instant PDF download formatted for easy reading by legal counsel in billable consultations.
 
 ### 6. User Profile & Identity
 - Displays clean, formatted user name in the top navigation bar instead of raw email addresses.
-- One-click inline editing (pencil icon) allowing users to personalize their display name with instant persistence to local storage and Supabase metadata.
+- One-click inline editing (pencil icon) allowing users to personalize their display name.
 - Sign-up form includes a dedicated Full Name field.
 
 ---
@@ -256,9 +266,9 @@ nyaysetu-ai/
 |---|---|---|
 | **Frontend** | React 19, Vite, Tailwind CSS, Framer Motion | High performance, instant HMR, fluid micro-animations, accessible design. |
 | **Backend** | Python 3.11+, FastAPI, Uvicorn | Async performance, auto-generated OpenAPI documentation, fast execution. |
-| **LLM & AI** | Google GenAI SDK (`google-genai`), Gemini 2.5 Flash / Lite | Official SDK, low-latency reasoning, robust JSON output with fallback resilience. |
+| **LLM & AI** | Google GenAI SDK (`google-genai`), Gemini 2.5 Flash | Google Antigravity native integration, cost-efficient, low-latency reasoning. |
 | **Voice / Speech** | Browser-native Web Speech API | Zero client bandwidth overhead, native Hindi & English acoustic models. |
-| **Parsing & Security** | PyMuPDF, python-docx, python-magic | Byte-level validation, multi-format parsing, executable disguise rejection. |
+| **Parsing & Magic** | PyMuPDF, python-docx, python-magic | Byte-level validation, multi-format parsing, security verification. |
 | **Testing** | pytest, pytest-asyncio, Vitest, Testing Library | End-to-end regression prevention and component assertion (43 tests). |
 | **Rate Limiting** | SlowAPI | Protection against API exhaustion and denial-of-service attempts. |
 
@@ -312,7 +322,7 @@ npm test -- --run
 ## 🔒 Security, Privacy & Ethics Guardrails
 
 1. **No Legal Verdicts**: Every LLM prompt is injected with an immutable preamble preventing verdicts (e.g., *"this is illegal"*, *"you will win"*). Post-processing filters regex-strip and replace any unauthorized conclusion patterns in both English and Hindi.
-2. **Rate Limiting**: Critical endpoints (`/api/documents/upload`, `/api/chat/*`, `/api/comparison/compare`) enforce rate limits via SlowAPI to prevent token depletion and DoS.
+2. **Rate Limiting**: Critical endpoints (`/api/documents/upload`, `/api/chat/*`, `/api/comparison`) enforce rate limits via SlowAPI to prevent token depletion and DoS.
 3. **Magic-Byte File Verification**: Uploads are verified by their file header bytes (`%PDF-`, `PK\x03\x04`), preventing executable files disguised with fake extensions from ever being processed.
 4. **Zero Persistent PII**: Documents are cached only within ephemeral session memory with automatic cleanup.
 5. **Secret Hygiene**: Real API keys are never committed; `.env` is rigorously ignored, and `.env.example` provides sanitized templates.
@@ -320,6 +330,8 @@ npm test -- --run
 ---
 
 ## 🚀 Deployment Guide
+
+NyaySetu AI is pre-configured for 1-click cloud deployment:
 
 ### Deploy Backend to Render
 1. Push this repository to GitHub.
@@ -369,7 +381,7 @@ cp ../.env.example .env
 # Open .env and add your GEMINI_API_KEY
 
 # Run server
-python run.py
+uvicorn app.main:app --reload --port 8000
 ```
 API Documentation will be accessible at: `http://localhost:8000/docs`
 
@@ -383,13 +395,13 @@ npm install
 # Run dev server
 npm run dev
 ```
-Open `http://localhost:5173` in Google Chrome or Microsoft Edge for optimal Web Speech API voice support.
+Open `http://localhost:5173` (or `http://localhost:5174`) in Google Chrome or Microsoft Edge for optimal Web Speech API voice support.
 
 ---
 
 ## 📦 Repository Constraints & Cleanliness
 
-- **Single Branch**: All development consolidated cleanly on `main`.
+- **Single Branch**: All development consolidated cleanly on the primary branch.
 - **Repository Size**: Under **0.4 MB** total clean code footprint (strictly excludes `node_modules`, `dist`, `.venv`, and sample PDFs).
 - **Environment Safety**: Zero committed credentials or API keys.
 
