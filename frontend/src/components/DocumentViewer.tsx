@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 import type { SummaryResponse } from '../lib/api'
+import { speakUtterance, stopSpeaking } from '../lib/speech'
 
 interface DocumentViewerProps {
   summary: SummaryResponse
@@ -38,28 +39,24 @@ export default function DocumentViewer({
   const handleLanguageToggle = (lang: 'en' | 'hi') => {
     setLanguage(lang)
     onLanguageChange?.(lang)
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel()
-      setSpeakingId(null)
-    }
+    stopSpeaking()
+    setSpeakingId(null)
   }
 
   const speakText = (text: string, id: string) => {
     if ('speechSynthesis' in window) {
       if (speakingId === id) {
-        window.speechSynthesis.cancel()
+        stopSpeaking()
         setSpeakingId(null)
         return
       }
 
-      window.speechSynthesis.cancel()
-      const utt = new SpeechSynthesisUtterance(text)
-      utt.lang = language === 'hi' ? 'hi-IN' : 'en-IN'
-      utt.rate = 0.88
-      utt.onend = () => setSpeakingId(null)
-      utt.onerror = () => setSpeakingId(null)
-      setSpeakingId(id)
-      window.speechSynthesis.speak(utt)
+      speakUtterance(text, {
+        lang: language === 'hi' ? 'hi-IN' : 'en-IN',
+        onStart: () => setSpeakingId(id),
+        onEnd: () => setSpeakingId(null),
+        onError: () => setSpeakingId(null),
+      })
     }
   }
 

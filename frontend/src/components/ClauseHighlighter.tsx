@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 import type { ClauseItem, ClauseType } from '../lib/api'
+import { speakUtterance, stopSpeaking } from '../lib/speech'
 
 interface ClauseHighlighterProps {
   clauses: ClauseItem[]
@@ -79,18 +80,16 @@ function ClauseCard({
     e.stopPropagation()
     if ('speechSynthesis' in window) {
       if (speaking) {
-        window.speechSynthesis.cancel()
+        stopSpeaking()
         setSpeaking(false)
         return
       }
-      window.speechSynthesis.cancel()
-      const utt = new SpeechSynthesisUtterance(explanationText)
-      utt.lang = language === 'hi' ? 'hi-IN' : 'en-IN'
-      utt.rate = 0.88
-      utt.onend = () => setSpeaking(false)
-      utt.onerror = () => setSpeaking(false)
-      setSpeaking(true)
-      window.speechSynthesis.speak(utt)
+      speakUtterance(explanationText, {
+        lang: language === 'hi' ? 'hi-IN' : 'en-IN',
+        onStart: () => setSpeaking(true),
+        onEnd: () => setSpeaking(false),
+        onError: () => setSpeaking(false),
+      })
     }
   }
 

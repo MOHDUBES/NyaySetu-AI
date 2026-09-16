@@ -77,10 +77,10 @@ export default function FileUpload({
           ${isDragActive && !isDragReject
             ? 'border-gold-400 bg-gold-500/10'
             : isDragReject || displayError
-            ? 'border-red-500/60 bg-red-500/5'
-            : selectedFile
-            ? 'border-emerald-500/60 bg-emerald-500/5'
-            : 'border-surface-border bg-surface-card hover:border-gold-500/50 hover:bg-gold-500/5'
+              ? 'border-red-500/60 bg-red-500/5'
+              : selectedFile
+                ? 'border-emerald-500/60 bg-emerald-500/5'
+                : 'border-surface-border bg-surface-card hover:border-gold-500/50 hover:bg-gold-500/5'
           }
           ${isLoading ? 'opacity-60 cursor-not-allowed' : ''}
         `}
@@ -126,10 +126,10 @@ export default function FileUpload({
               {isLoading
                 ? 'Processing document...'
                 : selectedFile
-                ? 'Document ready!'
-                : isDragActive
-                ? 'Drop it here!'
-                : label}
+                  ? 'Document ready!'
+                  : isDragActive
+                    ? 'Drop it here!'
+                    : label}
             </p>
             {selectedFile ? (
               <div className="flex items-center justify-center gap-2 text-sm text-slate-400">

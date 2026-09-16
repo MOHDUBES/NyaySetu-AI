@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { ComparisonResponse, DiffSection } from '../lib/api'
+import { speakUtterance, stopSpeaking } from '../lib/speech'
 
 interface ComparisonViewProps {
   result: ComparisonResponse
@@ -53,7 +54,7 @@ interface DiffCardProps {
   doc2Name: string
   sectionIndex: number
   activeSpeakerId: string | null
-  onToggleSpeech: (text: string, id: string) => void
+  onToggleSpeech: (text: string, id: string, explicitLang?: 'hi-IN' | 'en-IN') => void
   lang: 'hi' | 'en'
 }
 
@@ -69,10 +70,31 @@ function DiffCard({
   const config = changeConfig[section.change_type] || changeConfig.unchanged
   if (section.change_type === 'unchanged') return null // skip unchanged for cleaner view
 
+  const sectionSpeakerId = `diff-section-${sectionIndex}`
+  const isSectionSpeaking = activeSpeakerId === sectionSpeakerId
   const doc1Id = `diff-${sectionIndex}-doc1`
   const doc2Id = `diff-${sectionIndex}-doc2`
   const isDoc1Speaking = activeSpeakerId === doc1Id
   const isDoc2Speaking = activeSpeakerId === doc2Id
+
+  const handleSpeakSection = () => {
+    const isHindi = lang === 'hi'
+    let text = ''
+    if (section.change_type === 'modified') {
+      text = isHindi
+        ? `संशोधित खंड: ${doc1Name} में यह था: ${section.doc1_text}। जबकि ${doc2Name} में बदलकर यह हुआ है: ${section.doc2_text}।`
+        : `Modified section: In ${doc1Name}: ${section.doc1_text}. In ${doc2Name}, it was revised to: ${section.doc2_text}.`
+    } else if (section.change_type === 'added') {
+      text = isHindi
+        ? `नया जोड़ा गया खंड: ${doc2Name} में यह जोड़ा गया है: ${section.doc2_text}।`
+        : `Added section: Added in ${doc2Name}: ${section.doc2_text}.`
+    } else {
+      text = isHindi
+        ? `हटाया गया खंड: ${doc1Name} में था: ${section.doc1_text}। यह ${doc2Name} में मौजूद नहीं है।`
+        : `Removed section: Removed from ${doc1Name}: ${section.doc1_text}. Not present in ${doc2Name}.`
+    }
+    onToggleSpeech(text, sectionSpeakerId, isHindi ? 'hi-IN' : 'en-IN')
+  }
 
   return (
     <motion.div
@@ -82,10 +104,36 @@ function DiffCard({
       role="article"
       aria-label={`${config.label} section: ${section.section_title}`}
     >
-      <div className={`flex items-center gap-2 mb-3 ${config.headerClass}`}>
-        {config.icon}
-        <span className="text-xs font-semibold uppercase tracking-wide">{config.label}</span>
-        <span className="text-xs text-slate-500 ml-auto">{section.section_title}</span>
+      <div className={`flex flex-wrap items-center justify-between gap-2 mb-3 ${config.headerClass}`}>
+        <div className="flex items-center gap-2">
+          {config.icon}
+          <span className="text-xs font-semibold uppercase tracking-wide">
+            {lang === 'hi' && section.change_type === 'modified' ? 'संशोधित (Modified)' : config.label}
+          </span>
+          <span className="text-xs text-slate-500">{section.section_title}</span>
+        </div>
+
+        {/* Section-level TTS button */}
+        {'speechSynthesis' in window && (
+          <button
+            type="button"
+            onClick={handleSpeakSection}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-semibold transition-all ${
+              isSectionSpeaking
+                ? 'bg-red-500 text-white shadow-md shadow-red-500/20 animate-pulse'
+                : 'bg-surface-border/70 text-gold-400 hover:bg-gold-500/20 hover:text-gold-300 border border-gold-500/30'
+            }`}
+            aria-label={isSectionSpeaking ? 'Stop readout' : 'Listen to this change'}
+            title={isSectionSpeaking ? 'रोकें' : 'पूरा बदलाव बोलकर सुनें (Voice TTS)'}
+          >
+            {isSectionSpeaking ? <Square size={12} /> : <Volume2 size={12} />}
+            <span>
+              {isSectionSpeaking
+                ? (lang === 'hi' ? 'रोकें' : 'Stop')
+                : (lang === 'hi' ? 'पूरा बदलाव सुनें' : 'Listen Change')}
+            </span>
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -97,7 +145,12 @@ function DiffCard({
               {'speechSynthesis' in window && (
                 <button
                   type="button"
-                  onClick={() => onToggleSpeech(section.doc1_text, doc1Id)}
+                  onClick={() => {
+                    const text = lang === 'hi'
+                      ? `${doc1Name} में: ${section.doc1_text}`
+                      : `${doc1Name}: ${section.doc1_text}`
+                    onToggleSpeech(text, doc1Id, lang === 'hi' ? 'hi-IN' : 'en-IN')
+                  }}
                   className={`flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium transition-all ${
                     isDoc1Speaking
                       ? 'bg-red-500 text-white animate-pulse'
@@ -125,7 +178,12 @@ function DiffCard({
               {'speechSynthesis' in window && (
                 <button
                   type="button"
-                  onClick={() => onToggleSpeech(section.doc2_text, doc2Id)}
+                  onClick={() => {
+                    const text = lang === 'hi'
+                      ? `${doc2Name} में: ${section.doc2_text}`
+                      : `${doc2Name}: ${section.doc2_text}`
+                    onToggleSpeech(text, doc2Id, lang === 'hi' ? 'hi-IN' : 'en-IN')
+                  }}
                   className={`flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium transition-all ${
                     isDoc2Speaking
                       ? 'bg-red-500 text-white animate-pulse'
@@ -199,30 +257,19 @@ export default function ComparisonView({ result }: ComparisonViewProps) {
     if (!('speechSynthesis' in window)) return
 
     if (activeSpeakerId === id) {
-      window.speechSynthesis.cancel()
+      stopSpeaking()
       setActiveSpeakerId(null)
       return
     }
 
-    window.speechSynthesis.cancel()
-    const utterance = new SpeechSynthesisUtterance(text)
+    const targetLang = explicitLang || (lang === 'hi' ? 'hi-IN' : 'en-IN')
 
-    if (explicitLang) {
-      utterance.lang = explicitLang
-    } else {
-      // Auto-detect Hindi vs English from characters
-      const hasHindi = /[\u0900-\u097F]/.test(text)
-      utterance.lang = hasHindi ? 'hi-IN' : 'en-IN'
-    }
-
-    utterance.rate = 0.95
-    utterance.pitch = 1.0
-
-    utterance.onstart = () => setActiveSpeakerId(id)
-    utterance.onend = () => setActiveSpeakerId(null)
-    utterance.onerror = () => setActiveSpeakerId(null)
-
-    window.speechSynthesis.speak(utterance)
+    speakUtterance(text, {
+      lang: targetLang,
+      onStart: () => setActiveSpeakerId(id),
+      onEnd: () => setActiveSpeakerId(null),
+      onError: () => setActiveSpeakerId(null),
+    })
   }
 
   const handleSummarySpeech = () => {
@@ -231,18 +278,14 @@ export default function ComparisonView({ result }: ComparisonViewProps) {
   }
 
   const handleLanguageChange = (newLang: 'hi' | 'en') => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel()
-    }
+    stopSpeaking()
     setActiveSpeakerId(null)
     setLang(newLang)
   }
 
   useEffect(() => {
     return () => {
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel()
-      }
+      stopSpeaking()
     }
   }, [])
 

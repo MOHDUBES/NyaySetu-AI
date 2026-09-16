@@ -156,7 +156,7 @@ export default function Landing() {
             transition={{ delay: 0.5 }}
             className="text-xs text-slate-500 mt-8"
           >
-            ⚠️ NyaySetu AI provides informational assistance only. Not a substitute for legal advice.
+            NyaySetu AI provides informational assistance only. Not a substitute for legal advice.
           </motion.p>
         </div>
       </section>

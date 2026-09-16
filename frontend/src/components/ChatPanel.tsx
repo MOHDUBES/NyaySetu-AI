@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { chatWithDocument } from '../lib/api'
+import { speakUtterance, stopSpeaking } from '../lib/speech'
 
 interface Message {
   id: string
@@ -142,22 +143,17 @@ export default function ChatPanel({
   const speakText = (text: string, id: string) => {
     if ('speechSynthesis' in window) {
       if (speakingId === id) {
-        window.speechSynthesis.cancel()
+        stopSpeaking()
         setSpeakingId(null)
         return
       }
 
-      window.speechSynthesis.cancel()
-      const utterance = new SpeechSynthesisUtterance(text)
-      utterance.lang = language === 'hi' ? 'hi-IN' : 'en-IN'
-      utterance.rate = 0.95
-      utterance.pitch = 1.0
-
-      utterance.onstart = () => setSpeakingId(id)
-      utterance.onend = () => setSpeakingId(null)
-      utterance.onerror = () => setSpeakingId(null)
-
-      window.speechSynthesis.speak(utterance)
+      speakUtterance(text, {
+        lang: language === 'hi' ? 'hi-IN' : 'en-IN',
+        onStart: () => setSpeakingId(id),
+        onEnd: () => setSpeakingId(null),
+        onError: () => setSpeakingId(null),
+      })
     }
   }
 
