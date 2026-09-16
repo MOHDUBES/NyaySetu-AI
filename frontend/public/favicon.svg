@@ -1,5 +1,55 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
-  <rect width="32" height="32" rx="8" fill="#1a237e"/>
-  <path d="M16 6 L24 13 L20 13 L20 22 L12 22 L12 13 L8 13 Z" fill="#f59e0b"/>
-  <rect x="11" y="24" width="10" height="2" rx="1" fill="#f59e0b"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F172A"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE68A"/>
+      <stop offset="45%" stop-color="#F59E0B"/>
+      <stop offset="100%" stop-color="#D97706"/>
+    </linearGradient>
+    <linearGradient id="glowGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#F59E0B" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#F59E0B" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background rounded squircle with gold border -->
+  <rect width="64" height="64" rx="16" fill="url(#bgGrad)"/>
+  <rect x="1" y="1" width="62" height="62" rx="15" stroke="url(#goldGrad)" stroke-width="1.5" stroke-opacity="0.45"/>
+
+  <!-- Subtle glow in center -->
+  <circle cx="32" cy="32" r="22" fill="url(#glowGrad)"/>
+
+  <!-- Scales of Justice (NyaySetu Balance & Bridge motif) -->
+  <!-- Top Finial -->
+  <path d="M32 11 L35.5 14.5 L32 18 L28.5 14.5 Z" fill="url(#goldGrad)"/>
+
+  <!-- Main Balance Beam -->
+  <path d="M15 22 C23 20 41 20 49 22" stroke="url(#goldGrad)" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Center Pivot -->
+  <circle cx="32" cy="21" r="3.5" fill="url(#goldGrad)"/>
+
+  <!-- Central Pillar -->
+  <line x1="32" y1="21" x2="32" y2="46" stroke="url(#goldGrad)" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Base Bridge Arch (Setu) & Pedestal -->
+  <path d="M22 46 C26 43 38 43 42 46" stroke="url(#goldGrad)" stroke-width="3" stroke-linecap="round"/>
+  <path d="M18 51 L46 51" stroke="url(#goldGrad)" stroke-width="3.5" stroke-linecap="round"/>
+
+  <!-- Left Scale Strings -->
+  <line x1="16" y1="23" x2="10" y2="34" stroke="url(#goldGrad)" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="16" y1="23" x2="22" y2="34" stroke="url(#goldGrad)" stroke-width="1.5" stroke-linecap="round"/>
+
+  <!-- Left Scale Pan -->
+  <path d="M9 34 C9 39.5 23 39.5 23 34 Z" fill="url(#goldGrad)"/>
+
+  <!-- Right Scale Strings -->
+  <line x1="48" y1="23" x2="42" y2="34" stroke="url(#goldGrad)" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="48" y1="23" x2="54" y2="34" stroke="url(#goldGrad)" stroke-width="1.5" stroke-linecap="round"/>
+
+  <!-- Right Scale Pan -->
+  <path d="M41 34 C41 39.5 55 39.5 55 34 Z" fill="url(#goldGrad)"/>
 </svg>
