@@ -2,13 +2,6 @@
 ### End-to-End GenAI Legal Accessibility Platform for India
 **Built for the Hack2Skill PromptWars — "AI for Legal Assistance & Access" Challenge**
 
-[![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![React](https://img.shields.io/badge/Frontend-React%20%2B%20Vite%20%2B%20Tailwind-61DAFB?logo=react&logoColor=black)](https://vitejs.dev)
-[![Google Gemini](https://img.shields.io/badge/LLM-Google%20GenAI%20SDK%20(Gemini)-4285F4?logo=google&logoColor=white)](https://ai.google.dev)
-[![Web Speech API](https://img.shields.io/badge/Voice-STT%20%2B%20TTS%20(Hindi%2FEnglish)-FFB300)](https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API)
-[![Tests](https://img.shields.io/badge/Tests-43%20Passed%20(pytest%20%2B%20vitest)-brightgreen)](#-testing--code-quality)
-[![Repository Size](https://img.shields.io/badge/Repo%20Size-%3C%201MB%20(Clean)-blue)](#-repository-constraints--cleanliness)
-
 > ⚠️ **Persistent Legal Disclaimer**: NyaySetu AI provides **informational framing only** and is **not legal advice**. It does not establish an attorney-client relationship. Always consult a licensed legal professional for actionable decisions.
 
 ---
@@ -31,7 +24,7 @@ NyaySetu AI serves as an accessible digital bridge (*सेतु*) between comp
 
 ---
 
-## 🏆 Hackathon Evaluation Criteria Mapping
+## Evaluation Criteria Mapping
 
 This table directly maps NyaySetu AI’s implementation to the **6 evaluation criteria** of the PromptWars challenge:
 
